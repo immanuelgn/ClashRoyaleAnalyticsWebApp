@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Clash Royale Deck Analytics</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Clash Royale Deck Analytics & Strategy Engine</h1>
+
+  <p>Enter 8 card IDs (comma separated):</p>
+  <input id="cardsInput" placeholder="26000033,26000025,..." />
+  <button id="analyzeBtn">Analyze Deck</button>
+
+  <h2 id="deckType"></h2>
+  <h3 id="score"></h3>
+
+  <canvas id="synergyChart" width="600" height="300"></canvas>
+
+  <script src="script.js"></script>
+</body>
+</html>
