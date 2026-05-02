@@ -1,12 +1,8 @@
 ﻿# ClashRoyaleAnalyticsWebApp
 
-Live frontend: https://clashroyaleanalyticswebapp.vercel.app
+A full-stack Clash Royale analytics platform (C# backend + JavaScript frontend) with drag-and-drop deck building, Evo/Hero/Champion slot logic, matchup simulation, tower troop optimization, and deck scoring insights.
 
-Clash Royale deck analytics app with:
-- Drag-and-drop deck builder (Evo / Wild / Hero-Champion slot rules)
-- Tower troop selection + optimization
-- Matchup simulation + deck scoring breakdown
-- C# backend API (token kept server-side)
+Live frontend: https://clashroyaleanalyticswebapp.vercel.app
 
 ## Security
 - API token is never committed.
