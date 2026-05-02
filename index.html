@@ -1,26 +1,170 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Clash Royale Deck Analytics</title>
-
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Clash Royale Deck Analytics & Strategy Engine</h1>
+  <main class="container">
+    <h1>Clash Royale Deck Analytics</h1>
+    <p class="sub">Drag cards into 8 deck slots. Special slots follow the current Evo/Hero/Wild rules.</p>
 
-  <p>Enter 8 card IDs (comma separated):</p>
-  <input id="cardsInput" placeholder="26000033,26000025,..." />
-  <button id="analyzeBtn">Analyze Deck</button>
+    <section class="panel">
+      <h2>Deck Builder</h2>
+      <h3>Select Tower Troop</h3>
+      <div id="towerTroops" class="tower-troops"></div>
+      <div class="builder-metrics">
+        <div class="metric-tile">
+          <span class="metric-label">Cards Placed</span>
+          <strong id="liveDeckCount">0 / 8</strong>
+        </div>
+        <div class="metric-tile">
+          <span class="metric-label">Live Avg Elixir</span>
+          <strong id="liveAvgElixir">0.00</strong>
+        </div>
+        <div class="metric-tile">
+          <span class="metric-label">Deck Pace</span>
+          <strong id="livePace">Not Ready</strong>
+        </div>
+      </div>
+      <div class="slot-legend">
+        <span class="badge evo">Evo Slot</span>
+        <span class="badge wild">Wild Slot (Evo/Hero/Champion)</span>
+        <span class="badge hero">Hero/Champion Slot</span>
+      </div>
 
-  <h2 id="deckType"></h2>
-  <h3 id="score"></h3>
+      <div id="deckSlots" class="deck-slots"></div>
 
-  <canvas id="synergyChart" width="600" height="300"></canvas>
+      <div class="controls">
+        <button id="analyzeBtn">Analyze Deck</button>
+        <button id="optimizeTowerBtn">Optimize Tower Troop</button>
+        <button id="clearBtn" class="secondary">Clear Deck</button>
+      </div>
 
-  <script src="script.js"></script>
+      <p id="status" class="status"></p>
+    </section>
+    <div class="dashboard-grid">
+      <div class="left-column">
+        <section class="panel">
+          <h2>Card Pool</h2>
+          <input id="searchInput" placeholder="Search cards..." />
+          <div id="cardPool" class="card-pool"></div>
+        </section>
+
+        <section class="panel">
+          <h2>Matchup Simulator</h2>
+          <p class="sub">Compare your deck against meta-style presets.</p>
+          <div class="sim-row">
+            <select id="simDeckSelect"></select>
+            <button id="simRunBtn">Run Matchup Sim</button>
+          </div>
+          <p id="simSummary"></p>
+          <ul id="simDetails"></ul>
+        </section>
+
+        <section class="panel">
+          <h2>Deck Revisions</h2>
+          <p class="sub">Save local snapshots and compare progress.</p>
+          <div class="sim-row">
+            <button id="saveRevisionBtn">Save Revision</button>
+            <button id="exportRevisionBtn">Export Snapshot</button>
+          </div>
+          <ul id="revisionList"></ul>
+        </section>
+      </div>
+
+      <div class="right-column">
+        <section class="panel">
+          <h2>Overview</h2>
+          <div class="overview-grid">
+            <div class="overview-kpi">
+              <span>Score</span>
+              <strong id="score">-</strong>
+            </div>
+            <div class="overview-kpi">
+              <span>Archetype</span>
+              <strong id="archetype">-</strong>
+            </div>
+            <div class="overview-kpi">
+              <span>Average Elixir</span>
+              <strong id="avgElixir">-</strong>
+            </div>
+            <div class="overview-kpi">
+              <span>Tower Troop</span>
+              <strong id="towerLine">-</strong>
+            </div>
+          </div>
+          <p class="headline-line" id="winCons"></p>
+        </section>
+
+        <section class="panel">
+          <h2>Subscores</h2>
+          <ul id="subScoresList"></ul>
+          <h2>Tower Impact</h2>
+          <ul id="towerImpactList"></ul>
+        </section>
+
+        <section class="panel">
+          <h2>Tower Optimizer</h2>
+          <ul id="towerOptimizerList"></ul>
+          <p id="towerOptimizerBest"></p>
+        </section>
+
+        <section class="panel">
+          <h2>Suggested Changes</h2>
+          <p id="deltaSummary"></p>
+          <ul id="deltaBreakdown"></ul>
+        </section>
+
+        <section class="panel">
+          <h2>Weakness Profiler</h2>
+          <div class="weakness-actions">
+            <button class="weakness-btn" data-profile="anti_air">Struggle vs Air</button>
+            <button class="weakness-btn" data-profile="anti_swarm">Struggle vs Swarm</button>
+            <button class="weakness-btn" data-profile="anti_beatdown">Struggle vs Beatdown</button>
+          </div>
+          <ul id="weaknessProfileList"></ul>
+        </section>
+
+        <section class="panel">
+          <h2>Patch Drift</h2>
+          <p id="patchDriftLine"></p>
+          <ul id="patchDriftList"></ul>
+        </section>
+
+        <section class="panel">
+          <h2>Strengths</h2>
+          <ul id="strengthsList"></ul>
+          <h2>Weaknesses</h2>
+          <ul id="weaknessesList"></ul>
+          <h2>Recommendations</h2>
+          <ul id="recommendationsList"></ul>
+        </section>
+
+        <section class="panel">
+          <h2>Breakdown</h2>
+          <canvas id="synergyChart" height="140"></canvas>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="script.js?v=20260502e"></script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+

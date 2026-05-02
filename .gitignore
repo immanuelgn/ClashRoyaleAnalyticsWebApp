@@ -1,7 +1,25 @@
-﻿node_modules/
+﻿# Frontend
+node_modules/
 .next/
 dist/
 build/
 .env
+.env.local
+.env.*.local
+
+# OS / logs
 .DS_Store
 *.log
+
+# .NET backend
+backend/bin/
+backend/obj/
+backend/.vs/
+backend/*.user
+backend/*.suo
+backend/run.log
+
+# Secrets / local config
+secrets.json
+appsettings.Local.json
+backend/appsettings.Local.json
