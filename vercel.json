@@ -9,11 +9,5 @@
         { "key": "X-Frame-Options", "value": "DENY" }
       ]
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://REPLACE_WITH_BACKEND_DOMAIN/:path*"
-    }
   ]
 }
