@@ -1,0 +1,6 @@
+﻿# Keep generated/runtime data out of language stats.
+data/** linguist-vendored
+api/** linguist-vendored
+
+# Ensure backend source counts.
+backend/**/*.cs linguist-vendored=false
