@@ -1,10 +1,33 @@
 let chartInstance = null;
-const API_BASE = window.__CR_API_BASE__ || "http://127.0.0.1:7295";
-const API_CARDS = `${API_BASE}/api/clashroyale/cards`;
-const API_ANALYZE = `${API_BASE}/api/deck/synergy`;
+let ACTIVE_API_BASE = window.__CR_API_BASE__ || "http://127.0.0.1:7295";
 const ASSET_VARIANT_BASE = "https://raw.githubusercontent.com/RoyaleAPI/cr-api-assets/master/cards/";
 const REV_KEY = "cr_deck_revisions_v1";
 const SELECT_GUARD_MS = 140;
+
+function normalizeBase(base) {
+  return String(base || "").trim().replace(/\/+$/, "");
+}
+
+function apiUrl(base, endpoint) {
+  const cleanBase = normalizeBase(base);
+  const cleanEndpoint = `/${String(endpoint || "").replace(/^\/+/, "")}`;
+  if (cleanBase.endsWith("/api")) return `${cleanBase}${cleanEndpoint}`;
+  return `${cleanBase}/api${cleanEndpoint}`;
+}
+
+function getApiBaseCandidates() {
+  const out = [];
+  const push = (v) => {
+    const value = normalizeBase(v);
+    if (!value) return;
+    if (!out.includes(value)) out.push(value);
+  };
+  push(ACTIVE_API_BASE);
+  push("/api");
+  push(location.origin === "null" ? "" : location.origin);
+  push("https://clashroyaleanalyticswebapp.vercel.app/api");
+  return out;
+}
 
 const KNOWN_EVO_CARDS = new Set([
   "Archers", "Barbarians", "Bats", "Bomber", "Cannon Cart", "Electro Dragon",
@@ -97,8 +120,9 @@ async function boot() {
   statusEl.textContent = "Loading card pool...";
   loadRevisions();
   try {
-    const res = await fetch(API_CARDS, { cache: "no-store" });
-    state.cards = normalizeCardFlags(await res.json()).sort((a, b) => a.name.localeCompare(b.name));
+    const { cards, base } = await loadCardsWithFallback();
+    ACTIVE_API_BASE = base;
+    state.cards = normalizeCardFlags(cards).sort((a, b) => a.name.localeCompare(b.name));
     state.filteredCards = [...state.cards];
     renderTowerTroops();
     renderSlots();
@@ -108,8 +132,24 @@ async function boot() {
     statusEl.textContent = "Drag cards, choose tower troop, then analyze.";
   } catch (err) {
     console.error(err);
-    statusEl.textContent = "Could not load cards from backend. Make sure API is running.";
+    statusEl.textContent = "Could not load cards from API. Please refresh once.";
   }
+}
+
+async function loadCardsWithFallback() {
+  let lastError = null;
+  for (const base of getApiBaseCandidates()) {
+    try {
+      const res = await fetch(apiUrl(base, "clashroyale/cards"), { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data) || data.length === 0) throw new Error("Empty card response");
+      return { cards: data, base };
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError || new Error("No API endpoint available");
 }
 
 function normalizeCardFlags(cards) {
@@ -575,7 +615,7 @@ async function analyzeDeck() {
 }
 
 async function analyzePayload(payload) {
-  const res = await fetch(API_ANALYZE, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+  const res = await fetch(apiUrl(ACTIVE_API_BASE, "deck/synergy"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.title || data?.error || "Analysis request failed");
   return data;
