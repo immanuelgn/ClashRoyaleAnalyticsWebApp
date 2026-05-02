@@ -23,3 +23,4 @@ backend/run.log
 secrets.json
 appsettings.Local.json
 backend/appsettings.Local.json
+.vercel
