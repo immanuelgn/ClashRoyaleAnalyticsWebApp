@@ -1,22 +1,23 @@
-# Clash Royale Deck Analytics (Frontend + Backend)
+# Clash Royale Deck Analytics
 
-Public project for Clash Royale deck building, deck analytics, and matchup simulation.
+Public Clash Royale deck builder + analytics web app.
 
-## Repo structure
+## Project Structure
 
-- `index.html`, `style.css`, `script.js` -> frontend (static)
-- `config.js` -> frontend runtime API URL (safe to edit)
+- `index.html`, `style.css`, `script.js` -> frontend (static app)
+- `config.js` -> frontend runtime API base URL
 - `backend/` -> ASP.NET Core API (`net8.0`)
+- `vercel.json` -> frontend hosting config for Vercel
 
-## Security setup (important)
+## Security (Important)
 
-- API token is **not stored in Git**.
-- Backend reads token from **User Secrets** or environment variables.
-- `appsettings.json` in backend keeps a placeholder token only.
+- API token is **never stored in repo**.
+- Backend token comes from User Secrets (local) or environment variables (deployed).
+- `backend/appsettings.json` contains only placeholder token.
 
-## Local run
+## Local Development
 
-### 1) Backend
+### Backend
 
 ```powershell
 cd backend
@@ -24,15 +25,15 @@ dotnet user-secrets set "ClashRoyaleApi:ApiToken" "YOUR_TOKEN_HERE"
 dotnet run
 ```
 
-### 2) Frontend
+### Frontend
 
-Edit `config.js` if needed:
+`config.js` local default:
 
 ```js
 window.__CR_API_BASE__ = "http://127.0.0.1:7295";
 ```
 
-Then run static frontend (for example):
+Run:
 
 ```powershell
 node local-server.js
@@ -40,17 +41,44 @@ node local-server.js
 
 Open: `http://127.0.0.1:5500`
 
-## Deploy notes
+## Public Deployment (Recommended)
 
-- Frontend can be deployed to Vercel (static).
-- Backend should be deployed separately (Render/Railway/Azure/Fly/etc).
-- After backend deploy, update `config.js` with your backend URL.
-- In backend `appsettings.json`, set `Security:AllowedOrigins` to your frontend domains.
+### 1) Deploy Backend
 
-## Never commit
+Deploy `backend/` to Render/Railway/Azure/Fly.
 
-- API tokens
-- `.env` files with secrets
-- user-secrets files
-- `backend/bin`, `backend/obj`, `.vs`
+Set environment variables:
 
+- `ClashRoyaleApi__BaseUrl=https://api.clashroyale.com/v1/`
+- `ClashRoyaleApi__ApiToken=<YOUR_TOKEN>`
+
+Update `backend/appsettings.json` `Security:AllowedOrigins` with your frontend domain(s), for example:
+
+- `https://your-app.vercel.app`
+- `https://your-custom-domain.com`
+
+### 2) Deploy Frontend on Vercel
+
+Before deploying, set frontend API target:
+
+1. Copy `config.production.template.js` to `config.js`
+2. Set backend URL:
+
+```js
+window.__CR_API_BASE__ = "https://your-backend-domain.example.com";
+```
+
+Then deploy the repo root to Vercel.
+
+## GitHub Safety Checklist
+
+- No JWT/API token committed
+- `.gitignore` includes frontend env files and backend build outputs
+- No `bin/`, `obj/`, `.vs/`, `.user` files tracked
+
+## Never Commit
+
+- API tokens / JWTs
+- `.env` with secrets
+- user secrets
+- build outputs (`backend/bin`, `backend/obj`)
