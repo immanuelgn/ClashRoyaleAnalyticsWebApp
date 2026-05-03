@@ -49,6 +49,8 @@ const EVO_FORCE_OFF = new Set([
 
 const HERO_ART_OVERRIDES = {
   "Balloon": [
+    "assets/hero/balloon-hero-cover.png",
+    "/assets/hero/balloon-hero-cover.png",
     "https://liquipedia.net/commons/images/5/50/Clash_Royale_Card_Hero_Balloon.png",
     "https://liquipedia.net/commons/images/4/4e/Clash_Royale_Card_Balloon.png"
   ]
