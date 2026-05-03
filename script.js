@@ -72,6 +72,13 @@ const TOWER_TROOPS = [
   { id: "dagger_duchess", label: "Dagger Duchess" }
 ];
 
+const TOWER_TROOP_ICONS = {
+  tower_princess: buildTowerIconDataUri("TP", "#7c3aed", "#4338ca"),
+  royal_chef: buildTowerIconDataUri("RC", "#f59e0b", "#b45309"),
+  cannoneer: buildTowerIconDataUri("CN", "#0ea5e9", "#0369a1"),
+  dagger_duchess: buildTowerIconDataUri("DD", "#10b981", "#047857")
+};
+
 const META_PRESETS = [
   { name: "Hog EQ Cycle", cards: [26000021, 26000014, 26000012, 26000010, 26000031, 28000014, 28000000, 27000000], towerTroop: "tower_princess" },
   { name: "Giant Beatdown", cards: [26000003, 26000007, 26000015, 26000024, 26000019, 28000000, 28000017, 26000010], towerTroop: "royal_chef" },
@@ -205,7 +212,15 @@ function renderTowerTroops() {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = `tower-btn ${state.selectedTowerTroop === tower.id ? "active" : ""}`;
-    btn.textContent = tower.label;
+    const img = document.createElement("img");
+    img.className = "tower-icon";
+    img.alt = tower.label;
+    img.src = TOWER_TROOP_ICONS[tower.id];
+    const label = document.createElement("span");
+    label.className = "tower-label";
+    label.textContent = tower.label;
+    btn.appendChild(img);
+    btn.appendChild(label);
     btn.addEventListener("click", () => {
       state.selectedTowerTroop = tower.id;
       renderTowerTroops();
@@ -401,6 +416,18 @@ function getPoolSpecialSuffix(card) {
 
 function toCardSlug(name) {
   return name.toLowerCase().replaceAll(".", "").replaceAll("'", "").replaceAll("&", "and").replaceAll(" ", "-").replaceAll("--", "-");
+}
+
+function buildTowerIconDataUri(text, c1, c2) {
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'>
+    <defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0%' stop-color='${c1}'/><stop offset='100%' stop-color='${c2}'/>
+    </linearGradient></defs>
+    <rect x='4' y='4' width='72' height='72' rx='16' fill='url(#g)'/>
+    <rect x='10' y='10' width='60' height='60' rx='12' fill='rgba(8,15,35,0.35)'/>
+    <text x='40' y='49' font-family='Segoe UI,Arial,sans-serif' font-size='24' font-weight='800' text-anchor='middle' fill='white'>${text}</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
 window.__crNextImageFallback = function __crNextImageFallback(imgEl) {
@@ -626,7 +653,7 @@ function renderAllAnalysis(data) {
   setText("towerLine", `${tower?.label || "Tower Princess"}`);
   setText("archetype", `${data.archetype} (${data.archetypeConfidence}% conf)`);
   setText("score", `${data.score}`);
-  setText("avgElixir", `${data.averageElixir}`);
+  setText("avgElixir", `${Number(data.averageElixir).toFixed(1)}`);
   setText("winCons", `Win Conditions: ${(data.winConditions || []).join(" | ") || "None detected"}`);
   renderList("subScoresList", objectToList(data.subScores));
   renderList("towerImpactList", objectToList(data.towerImpact));
@@ -686,7 +713,7 @@ async function runDeltaEngine() {
   setText("deltaSummary", `Best swap: ${best.outgoing.name} -> ${best.incoming.name} (Slot ${best.slot + 1}). ${baseline.score} -> ${best.analyzed.score} (${best.delta >= 0 ? "+" : ""}${best.delta}).`);
   renderList("deltaBreakdown", [
     `Archetype: ${baseline.archetype} -> ${best.analyzed.archetype}`,
-    `Average Elixir: ${baseline.averageElixir} -> ${best.analyzed.averageElixir}`,
+    `Average Elixer Cost: ${Number(baseline.averageElixir).toFixed(1)} -> ${Number(best.analyzed.averageElixir).toFixed(1)}`,
     `Win Conditions: ${(best.analyzed.winConditions || []).join(", ") || "None"}`
   ]);
   statusEl.textContent = "Suggested changes ready.";
@@ -857,7 +884,7 @@ function renderBuilderMetrics() {
   const pace = avg === 0 ? "Not Ready" : avg <= 3 ? "Fast Cycle" : avg <= 4 ? "Balanced" : "Heavy Beatdown";
 
   setText("liveDeckCount", `${count} / 8`);
-  setText("liveAvgElixir", avg.toFixed(2));
+  setText("liveAvgElixir", avg.toFixed(1));
   setText("livePace", pace);
 }
 

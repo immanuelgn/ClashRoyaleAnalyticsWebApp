@@ -67,7 +67,7 @@ function getMetadata(card) {
   const role = (card.role || "Support").toLowerCase();
   const attackType = (card.attackType || "Ground").toLowerCase();
   const isWinCondition = role === "wincondition" || /hog|giant|golem|balloon|barrel|x-bow|mortar|miner/.test(name);
-  const isBuilding = /cannon|tesla|tower|tombstone|x-bow|mortar/.test(name);
+  const isBuilding = /cannon|tesla|tower|tombstone|x-bow|mortar|hut|furnace|collector|cage|spawner/.test(name);
   const isLightSpell = /zap|log|snowball|arrows|barbarian barrel|tornado/.test(name);
   const isHeavySpell = /fireball|poison|rocket|lightning/.test(name);
   const isCycleCard = (card.elixirCost || 0) <= 2 || role === "cycle";
@@ -145,7 +145,7 @@ function analyzeDeck(cardIds, towerTroop) {
   else { defense += 5; breakdown["Air Defense"] = 5; weaknesses.push("Air defense may be unreliable."); }
   const buildingCount = metadata.filter(m => m.isBuilding).length;
   if (buildingCount >= 1) { defense += 10; breakdown["Building Coverage"] = 10; }
-  else { defense += 4; breakdown["Building Coverage"] = 4; weaknesses.push("No defensive building detected."); }
+  else { defense += 4; breakdown["Building Coverage"] = 4; weaknesses.push("No defensive building/spawner detected."); }
   const splashCount = metadata.filter(m => m.isSplash).length;
   if (splashCount >= 2) { defense += 8; breakdown["Swarm Control"] = 8; } else { defense += 4; breakdown["Swarm Control"] = 4; }
 
@@ -217,7 +217,7 @@ function analyzeDeck(cardIds, towerTroop) {
 
   return {
     score: totalScore,
-    averageElixir: Math.round(avgElixir * 100) / 100,
+    averageElixir: Math.round(avgElixir * 10) / 10,
     archetype,
     archetypeConfidence: confidence,
     winConditions,
