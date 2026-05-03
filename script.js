@@ -29,30 +29,28 @@ function getApiBaseCandidates() {
   return out;
 }
 
-const KNOWN_EVO_CARDS = new Set([
-  "Archers", "Barbarians", "Bats", "Bomber", "Cannon Cart", "Electro Dragon",
-  "Executioner", "Firecracker", "Giant Snowball", "Goblin Barrel", "Goblin Cage",
-  "Goblin Drill", "Ice Spirit", "Knight", "Mega Knight", "Musketeer",
-  "P.E.K.K.A", "Royal Giant", "Royal Hogs", "Skeletons", "Tesla", "Valkyrie", "Wizard",
-  "Zap", "Battle Ram", "Baby Dragon", "Witch", "Dart Goblin", "Inferno Dragon"
+const EVO_CARD_SLUGS = new Set([
+  "archers", "baby-dragon", "barbarian-barrel", "barbarians", "bats", "battle-ram",
+  "bomber", "cannon", "cannon-cart", "dart-goblin", "electro-dragon", "executioner",
+  "firecracker", "furnace", "giant", "giant-snowball", "goblin-barrel", "goblin-cage",
+  "goblin-drill", "goblin-giant", "goblins", "hunter", "ice-golem", "ice-spirit",
+  "inferno-dragon", "knight", "lumberjack", "magic-archer", "mega-knight", "mega-minion",
+  "mini-pekka", "mortar", "musketeer", "pekka", "royal-ghost", "royal-giant",
+  "royal-hogs", "royal-recruits", "skeleton-army", "skeleton-barrel", "skeletons",
+  "tesla", "valkyrie", "wall-breakers", "witch", "wizard", "zap"
 ]);
 
-const KNOWN_HERO_CARDS = new Set([
-  "Knight", "Wizard", "Prince", "Musketeer", "Mini P.E.K.K.A", "Balloon",
-  "Mega Minion", "Ice Golem", "Giant", "Goblins", "Golden Knight",
-  "Skeleton King", "Archer Queen", "Mighty Miner", "Boss Bandit"
+const HERO_CARD_SLUGS = new Set([
+  "barbarian-barrel", "giant", "goblins", "ice-golem", "knight",
+  "magic-archer", "mega-minion", "mini-pekka", "musketeer", "wizard", "balloon"
 ]);
 
-const EVO_FORCE_OFF = new Set([
-  "The Log"
-]);
+const EVO_FORCE_OFF_SLUGS = new Set(["the-log"]);
 
 const HERO_ART_OVERRIDES = {
   "Balloon": [
-    "assets/hero/balloon-hero-cover.png",
     "/assets/hero/balloon-hero-cover.png",
-    "https://liquipedia.net/commons/images/5/50/Clash_Royale_Card_Hero_Balloon.png",
-    "https://liquipedia.net/commons/images/4/4e/Clash_Royale_Card_Balloon.png"
+    "assets/hero/balloon-hero-cover.png"
   ]
 };
 
@@ -153,9 +151,10 @@ async function loadCardsWithFallback() {
 
 function normalizeCardFlags(cards) {
   return (cards || []).map((c) => {
+    const slug = toCardSlug(c.name);
     const isChampion = !!c.isChampion;
-    const isHero = KNOWN_HERO_CARDS.has(c.name) || !!c.isHero || isChampion;
-    const isEvolution = KNOWN_EVO_CARDS.has(c.name) && !EVO_FORCE_OFF.has(c.name);
+    const isHero = HERO_CARD_SLUGS.has(slug) || isChampion;
+    const isEvolution = EVO_CARD_SLUGS.has(slug) && !EVO_FORCE_OFF_SLUGS.has(slug);
     const allowedSlots = ["normal"];
     if (isEvolution) allowedSlots.push("evo");
     if (isHero || isChampion) allowedSlots.push("hero");
@@ -360,6 +359,7 @@ function getDisplayImageFallbacks(card, slotType, slotIndex = -1) {
 
   if (slotType === "evo") {
     push(`${ASSET_VARIANT_BASE}${slug}-ev1.png`);
+    push(`${ASSET_VARIANT_BASE}${slug}-hero-ev1.png`);
     push(card.evoIconUrl);
     push(base);
     return list;
@@ -381,6 +381,7 @@ function getDisplayImageFallbacks(card, slotType, slotIndex = -1) {
       return list;
     }
     push(`${ASSET_VARIANT_BASE}${slug}-ev1.png`);
+    push(`${ASSET_VARIANT_BASE}${slug}-hero-ev1.png`);
     push(card.evoIconUrl);
     push(base);
     return list;

@@ -5,21 +5,23 @@ const CARDS = JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "..", "data", "cards.json"), "utf8")
 );
 
-const KNOWN_EVO_CARDS = new Set([
-  "Archers", "Barbarians", "Bats", "Bomber", "Cannon Cart", "Electro Dragon",
-  "Executioner", "Firecracker", "Giant Snowball", "Goblin Barrel", "Goblin Cage",
-  "Goblin Drill", "Ice Spirit", "Knight", "Mega Knight", "Musketeer",
-  "P.E.K.K.A", "Royal Giant", "Royal Hogs", "Skeletons", "Tesla", "Valkyrie", "Wizard",
-  "Zap", "Battle Ram", "Baby Dragon", "Witch", "Dart Goblin", "Inferno Dragon"
+const EVO_CARD_SLUGS = new Set([
+  "archers", "baby-dragon", "barbarian-barrel", "barbarians", "bats", "battle-ram",
+  "bomber", "cannon", "cannon-cart", "dart-goblin", "electro-dragon", "executioner",
+  "firecracker", "furnace", "giant", "giant-snowball", "goblin-barrel", "goblin-cage",
+  "goblin-drill", "goblin-giant", "goblins", "hunter", "ice-golem", "ice-spirit",
+  "inferno-dragon", "knight", "lumberjack", "magic-archer", "mega-knight", "mega-minion",
+  "mini-pekka", "mortar", "musketeer", "pekka", "royal-ghost", "royal-giant",
+  "royal-hogs", "royal-recruits", "skeleton-army", "skeleton-barrel", "skeletons",
+  "tesla", "valkyrie", "wall-breakers", "witch", "wizard", "zap"
 ]);
 
-const KNOWN_HERO_CARDS = new Set([
-  "Knight", "Wizard", "Prince", "Musketeer", "Mini P.E.K.K.A", "Balloon",
-  "Mega Minion", "Ice Golem", "Giant", "Goblins", "Golden Knight",
-  "Skeleton King", "Archer Queen", "Mighty Miner", "Boss Bandit"
+const HERO_CARD_SLUGS = new Set([
+  "barbarian-barrel", "giant", "goblins", "ice-golem", "knight",
+  "magic-archer", "mega-minion", "mini-pekka", "musketeer", "wizard", "balloon"
 ]);
 
-const EVO_FORCE_OFF = new Set(["The Log"]);
+const EVO_FORCE_OFF_SLUGS = new Set(["the-log"]);
 
 function slugify(name) {
   return (name || "")
@@ -41,9 +43,10 @@ function normalizeTowerTroop(towerTroop) {
 }
 
 function withFlags(card) {
+  const slug = slugify(card.name);
   const isChampion = (card.rarity || "").toLowerCase() === "champion";
-  const isHero = KNOWN_HERO_CARDS.has(card.name) || isChampion;
-  const isEvolution = KNOWN_EVO_CARDS.has(card.name) && !EVO_FORCE_OFF.has(card.name);
+  const isHero = HERO_CARD_SLUGS.has(slug) || isChampion;
+  const isEvolution = EVO_CARD_SLUGS.has(slug) && !EVO_FORCE_OFF_SLUGS.has(slug);
   const allowedSlots = ["normal"];
   if (isEvolution) allowedSlots.push("evo");
   if (isHero || isChampion) allowedSlots.push("hero");
@@ -51,7 +54,7 @@ function withFlags(card) {
 
   return {
     ...card,
-    iconUrls: { medium: `https://royaleapi.github.io/cr-api-assets/cards/${slugify(card.name)}.png` },
+    iconUrls: { medium: `https://royaleapi.github.io/cr-api-assets/cards/${slug}.png` },
     isEvolution,
     isHero,
     isChampion,
