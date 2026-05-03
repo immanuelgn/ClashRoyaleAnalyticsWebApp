@@ -73,10 +73,10 @@ const TOWER_TROOPS = [
 ];
 
 const TOWER_TROOP_ICONS = {
-  tower_princess: buildTowerIconDataUri("TP", "#7c3aed", "#4338ca"),
-  royal_chef: buildTowerIconDataUri("RC", "#f59e0b", "#b45309"),
-  cannoneer: buildTowerIconDataUri("CN", "#0ea5e9", "#0369a1"),
-  dagger_duchess: buildTowerIconDataUri("DD", "#10b981", "#047857")
+  tower_princess: "/assets/towers/tower-princess.svg",
+  royal_chef: "/assets/towers/royal-chef.svg",
+  cannoneer: "/assets/towers/cannoneer.svg",
+  dagger_duchess: "/assets/towers/dagger-duchess.svg"
 };
 
 const META_PRESETS = [
@@ -416,18 +416,6 @@ function getPoolSpecialSuffix(card) {
 
 function toCardSlug(name) {
   return name.toLowerCase().replaceAll(".", "").replaceAll("'", "").replaceAll("&", "and").replaceAll(" ", "-").replaceAll("--", "-");
-}
-
-function buildTowerIconDataUri(text, c1, c2) {
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'>
-    <defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
-      <stop offset='0%' stop-color='${c1}'/><stop offset='100%' stop-color='${c2}'/>
-    </linearGradient></defs>
-    <rect x='4' y='4' width='72' height='72' rx='16' fill='url(#g)'/>
-    <rect x='10' y='10' width='60' height='60' rx='12' fill='rgba(8,15,35,0.35)'/>
-    <text x='40' y='49' font-family='Segoe UI,Arial,sans-serif' font-size='24' font-weight='800' text-anchor='middle' fill='white'>${text}</text>
-  </svg>`;
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
 window.__crNextImageFallback = function __crNextImageFallback(imgEl) {
