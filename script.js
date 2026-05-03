@@ -49,11 +49,8 @@ const EVO_FORCE_OFF = new Set([
 
 const HERO_ART_OVERRIDES = {
   "Balloon": [
-    "https://static.wikia.nocookie.net/clashroyale/images/5/54/Hero_Balloon_card_render.png/revision/latest",
-    "https://static.wikia.nocookie.net/clashroyale/images/5/54/Hero_Balloon_card_render.png/revision/latest/scale-to-width-down/512",
-    "https://static.wikia.nocookie.net/clashroyale/images/5/54/Hero_Balloon_card_render.png/revision/latest/scale-to-width-down/256",
-    "https://royaleapi.github.io/cr-api-assets/cards/balloon-hero.png",
-    "https://raw.githubusercontent.com/RoyaleAPI/cr-api-assets/master/cards/balloon-hero.png"
+    "https://liquipedia.net/commons/images/5/50/Clash_Royale_Card_Hero_Balloon.png",
+    "https://liquipedia.net/commons/images/4/4e/Clash_Royale_Card_Balloon.png"
   ]
 };
 
