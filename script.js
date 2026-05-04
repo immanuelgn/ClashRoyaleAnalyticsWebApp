@@ -34,8 +34,8 @@ const EVO_CARD_SLUGS = new Set([
   "bomber", "cannon", "dart-goblin", "electro-dragon", "executioner",
   "firecracker", "furnace", "giant-snowball", "goblin-barrel", "goblin-cage",
   "goblin-drill", "goblin-giant", "hunter", "ice-spirit",
-  "inferno-dragon", "knight", "lumberjack", "mega-knight", "mega-minion",
-  "mortar", "musketeer", "pekka", "royal-ghost", "royal-giant",
+  "inferno-dragon", "knight", "lumberjack", "mega-knight",
+  "mortar", "pekka", "royal-ghost", "royal-giant",
   "royal-hogs", "royal-recruits", "skeleton-army", "skeleton-barrel", "skeletons",
   "tesla", "valkyrie", "wall-breakers", "witch", "wizard", "zap"
 ]);
@@ -693,9 +693,11 @@ function renderAllAnalysis(data) {
     setText("mlForecastLine", "");
     renderList("mlDriversList", []);
   }
-  renderList("mlSuggestionsList", (data.mlSuggestions || []).map((s) =>
-    `Slot ${s.slot}: ${s.outgoing} -> ${s.incoming} (Win Rate ${s.predictedWinRate}%, +${s.deltaWinRate}%)`
-  ));
+  const saneMlSuggestions = (data.mlSuggestions || []).filter((s) => Number(s.deltaWinRate) >= 1.0).slice(0, 3);
+  renderList("mlSuggestionsList", saneMlSuggestions.length
+    ? saneMlSuggestions.map((s) => `Slot ${s.slot}: ${s.outgoing} -> ${s.incoming} (Win Rate ${s.predictedWinRate}%, +${s.deltaWinRate}%)`)
+    : ["No strong swap suggested. Deck already looks well-optimized in current model constraints."]
+  );
   renderChart(data.breakdown || {});
   weaknessPanelEl?.classList.remove("hidden");
   runWeaknessProfile("anti_air");
@@ -708,10 +710,24 @@ async function optimizeTowerTroop() {
   statusEl.textContent = "Comparing all tower troops...";
 
   const results = await Promise.all(TOWER_TROOPS.map(async (tower) => ({ tower, data: await analyzePayload({ cardIds, towerTroop: tower.id }) })));
-  const ranked = results.map((r) => ({ id: r.tower.id, label: r.tower.label, score: r.data.score })).sort((a, b) => b.score - a.score);
-  renderList("towerOptimizerList", ranked.map((r, i) => `${i + 1}. ${r.label}: ${r.score}`));
-  setText("towerOptimizerBest", `Best tower troop: ${ranked[0].label} (${ranked[0].score}).`);
-  state.selectedTowerTroop = ranked[0].id;
+  const ranked = results.map((r) => {
+    const score = Number(r.data?.score || 0);
+    const ml = Number(r.data?.mlForecast?.predictedWinRate || 0);
+    const blended = Math.round((score * 0.62 + ml * 0.38) * 10) / 10;
+    return { id: r.tower.id, label: r.tower.label, score, ml, blended };
+  }).sort((a, b) => b.blended - a.blended);
+  renderList("towerOptimizerList", ranked.map((r, i) => `${i + 1}. ${r.label}: Blend ${r.blended} (Score ${r.score}, ML ${r.ml}%)`));
+  const current = ranked.find((r) => r.id === state.selectedTowerTroop);
+  const best = ranked[0];
+  const keepCurrent = current && ((best.blended - current.blended) <= 1.5);
+  const choice = keepCurrent ? current : best;
+  setText(
+    "towerOptimizerBest",
+    keepCurrent
+      ? `Current tower (${current.label}) is already within optimizer margin (Δ <= 1.5), keeping it.`
+      : `Best tower troop: ${choice.label} (Blend ${choice.blended}).`
+  );
+  state.selectedTowerTroop = choice.id;
   renderTowerTroops();
   statusEl.textContent = "Tower optimization complete.";
 }
@@ -723,7 +739,17 @@ async function runDeltaEngine() {
   const baseline = state.latestAnalysis || await analyzePayload({ cardIds: cards.map((c) => c.id), towerTroop: state.selectedTowerTroop });
   state.latestAnalysis = baseline;
   if (baseline.mlSuggestions && baseline.mlSuggestions.length > 0) {
-    const top = baseline.mlSuggestions[0];
+    const top = baseline.mlSuggestions.find((x) => Number(x.deltaWinRate) >= 1.0);
+    if (!top) {
+      setText("deltaSummary", "No high-confidence one-card upgrade found. Current deck structure is already strong.");
+      renderList("deltaBreakdown", [
+        `Predicted Win Rate: ${baseline.mlForecast?.predictedWinRate ?? "-"}%`,
+        `Model confidence: ${baseline.mlForecast?.confidence ?? "-"}%`,
+        "Try matchup simulator for matchup-specific improvements instead of structural swaps."
+      ]);
+      statusEl.textContent = "Suggested changes ready.";
+      return null;
+    }
     setText("deltaSummary", `Best swap (ML): ${top.outgoing} -> ${top.incoming} (Slot ${top.slot}), +${top.deltaWinRate}% predicted win rate.`);
     renderList("deltaBreakdown", [
       `Predicted Win Rate after swap: ${top.predictedWinRate}%`,
@@ -762,7 +788,7 @@ async function runDeltaEngine() {
   setText("deltaSummary", `Best swap: ${best.outgoing.name} -> ${best.incoming.name} (Slot ${best.slot + 1}). ${baseline.score} -> ${best.analyzed.score} (${best.delta >= 0 ? "+" : ""}${best.delta}).`);
   renderList("deltaBreakdown", [
     `Archetype: ${baseline.archetype} -> ${best.analyzed.archetype}`,
-    `Average Elixer Cost: ${Number(baseline.averageElixir).toFixed(1)} -> ${Number(best.analyzed.averageElixir).toFixed(1)}`,
+    `Average Elixir Cost: ${Number(baseline.averageElixir).toFixed(1)} -> ${Number(best.analyzed.averageElixir).toFixed(1)}`,
     `Win Conditions: ${(best.analyzed.winConditions || []).join(", ") || "None"}`
   ]);
   statusEl.textContent = "Suggested changes ready.";
@@ -954,4 +980,5 @@ function renderBuilderMetrics() {
 function escapeHtml(value) {
   return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
 }
+
 

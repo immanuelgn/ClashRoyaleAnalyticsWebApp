@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -22,7 +22,7 @@
           <strong id="liveDeckCount">0 / 8</strong>
         </div>
         <div class="metric-tile">
-          <span class="metric-label">Average Elixer Cost</span>
+          <span class="metric-label">Average Elixir Cost</span>
           <strong id="liveAvgElixir">0.0</strong>
         </div>
         <div class="metric-tile">
@@ -89,7 +89,7 @@
               <strong id="archetype">-</strong>
             </div>
             <div class="overview-kpi">
-              <span>Average Elixer Cost</span>
+              <span>Average Elixir Cost</span>
               <strong id="avgElixir">-</strong>
             </div>
             <div class="overview-kpi">
@@ -107,25 +107,28 @@
           <ul id="towerImpactList"></ul>
         </section>
 
-        <section class="panel">
+        <details class="panel foldout" open>
+          <summary>Tower Optimizer</summary>
           <h2>Tower Optimizer</h2>
           <ul id="towerOptimizerList"></ul>
           <p id="towerOptimizerBest"></p>
-        </section>
+        </details>
 
-        <section class="panel">
+        <details class="panel foldout" open>
+          <summary>Suggested Changes</summary>
           <h2>Suggested Changes</h2>
           <p id="deltaSummary"></p>
           <ul id="deltaBreakdown"></ul>
-        </section>
+        </details>
 
-        <section class="panel">
+        <details class="panel foldout" open>
+          <summary>ML Forecast</summary>
           <h2>ML Forecast</h2>
           <p id="mlForecastLine"></p>
           <ul id="mlDriversList"></ul>
           <h3>ML Upgrade Suggestions</h3>
           <ul id="mlSuggestionsList"></ul>
-        </section>
+        </details>
 
         <section class="panel hidden" id="weaknessPanel">
           <h2>Weakness Profiler</h2>
@@ -137,25 +140,28 @@
           <ul id="weaknessProfileList"></ul>
         </section>
 
-        <section class="panel">
+        <details class="panel foldout">
+          <summary>Patch Drift</summary>
           <h2>Patch Drift</h2>
           <p id="patchDriftLine"></p>
           <ul id="patchDriftList"></ul>
-        </section>
+        </details>
 
-        <section class="panel">
+        <details class="panel foldout">
+          <summary>Strengths / Weaknesses / Recommendations</summary>
           <h2>Strengths</h2>
           <ul id="strengthsList"></ul>
           <h2>Weaknesses</h2>
           <ul id="weaknessesList"></ul>
           <h2>Recommendations</h2>
           <ul id="recommendationsList"></ul>
-        </section>
+        </details>
 
-        <section class="panel">
+        <details class="panel foldout">
+          <summary>Breakdown Chart</summary>
           <h2>Breakdown</h2>
           <canvas id="synergyChart" height="140"></canvas>
-        </section>
+        </details>
       </div>
     </div>
   </main>
@@ -164,6 +170,7 @@
   <script src="script.js?v=20260504a"></script>
 </body>
 </html>
+
 
 
 

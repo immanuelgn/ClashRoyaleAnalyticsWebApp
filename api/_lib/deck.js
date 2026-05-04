@@ -1,4 +1,4 @@
-﻿const fs = require("fs");
+const fs = require("fs");
 const path = require("path");
 
 const CARDS = JSON.parse(
@@ -10,8 +10,8 @@ const EVO_CARD_SLUGS = new Set([
   "bomber", "cannon", "dart-goblin", "electro-dragon", "executioner",
   "firecracker", "furnace", "giant-snowball", "goblin-barrel", "goblin-cage",
   "goblin-drill", "goblin-giant", "hunter", "ice-spirit",
-  "inferno-dragon", "knight", "lumberjack", "mega-knight", "mega-minion",
-  "mortar", "musketeer", "pekka", "royal-ghost", "royal-giant",
+  "inferno-dragon", "knight", "lumberjack", "mega-knight",
+  "mortar", "pekka", "royal-ghost", "royal-giant",
   "royal-hogs", "royal-recruits", "skeleton-army", "skeleton-barrel", "skeletons",
   "tesla", "valkyrie", "wall-breakers", "witch", "wizard", "zap"
 ]);
@@ -295,8 +295,15 @@ function analyzeDeck(cardIds, towerTroop) {
     if (cheapCount >= 2) { totalScore += 3; towerImpact["Cycle Tempo Synergy"] = 3; }
     else { totalScore -= 1; towerImpact["Cycle Tempo Synergy"] = -1; }
   } else if (tt === "royal_chef") {
-    if (tankCount >= 2) { totalScore += 3; towerImpact["Frontline Synergy"] = 3; }
-    else { totalScore -= 1; towerImpact["Frontline Synergy"] = -1; }
+    if (tankCount >= 2 && avgElixir >= 3.7) { totalScore += 3; towerImpact["Frontline Synergy"] = 3; }
+    else { totalScore -= 3; towerImpact["Frontline Synergy"] = -3; }
+  } else if (tt === "tower_princess") {
+    if (avgElixir <= 3.3 && winConCount >= 1) {
+      totalScore += 3;
+      towerImpact["Cycle Stability Synergy"] = 3;
+    } else {
+      towerImpact["Cycle Stability Synergy"] = 0;
+    }
   } else {
     towerImpact.Baseline = 0;
   }
@@ -340,4 +347,5 @@ function analyzeDeck(cardIds, towerTroop) {
 }
 
 module.exports = { CARDS, withFlags, analyzeDeck };
+
 
