@@ -98,6 +98,105 @@ function buildMatchups(archetype) {
   return { "Strong Against": "Beatdown", "Weak Against": "Cycle" };
 }
 
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function buildMlFeatures(cards, metadata, avgElixir, towerTroop) {
+  const spellCount = cards.filter(c => c.role === "Spell").length;
+  const lightSpellCount = metadata.filter(m => m.isLightSpell).length;
+  const heavySpellCount = metadata.filter(m => m.isHeavySpell).length;
+  const winConCount = metadata.filter(m => m.isWinCondition).length;
+  const buildingCount = metadata.filter(m => m.isBuilding).length;
+  const airCounters = metadata.filter(m => m.canHitAir).length;
+  const splashCount = metadata.filter(m => m.isSplash).length;
+  const cycleCards = metadata.filter(m => m.isCycleCard).length;
+  const resetCount = metadata.filter(m => m.isReset).length;
+  const tankCount = metadata.filter(m => m.isTank).length;
+  const tower = normalizeTowerTroop(towerTroop);
+  return {
+    avgElixir,
+    spellCount,
+    lightSpellCount,
+    heavySpellCount,
+    winConCount,
+    buildingCount,
+    airCounters,
+    splashCount,
+    cycleCards,
+    resetCount,
+    tankCount,
+    tower
+  };
+}
+
+function predictWinRate(features) {
+  // Lightweight ML-style linear model + sigmoid calibration.
+  let z = 0;
+  z += 0.35 * clamp(features.winConCount, 0, 2);
+  z += 0.22 * clamp(features.spellCount, 0, 3);
+  z += 0.18 * (features.lightSpellCount > 0 ? 1 : -0.5);
+  z += 0.16 * (features.heavySpellCount > 0 ? 1 : -0.5);
+  z += 0.20 * clamp(features.airCounters - 2, -1, 2);
+  z += 0.14 * clamp(features.splashCount - 1, -1, 2);
+  z += 0.12 * clamp(features.buildingCount, 0, 1);
+  z += 0.10 * clamp(features.resetCount, 0, 1);
+  z += 0.08 * clamp(features.cycleCards - 2, -2, 2);
+  z += 0.06 * clamp(features.tankCount, 0, 2);
+  z -= 0.20 * Math.abs(features.avgElixir - 3.6);
+
+  if (features.tower === "cannoneer") z += (features.airCounters >= 3 ? 0.12 : -0.15);
+  if (features.tower === "dagger_duchess") z += (features.cycleCards >= 2 ? 0.10 : -0.08);
+  if (features.tower === "royal_chef") z += (features.tankCount >= 2 ? 0.12 : -0.08);
+
+  const p = 1 / (1 + Math.exp(-(z - 0.9)));
+  return clamp(35 + (p * 45), 35, 80);
+}
+
+function buildMlForecast(features, score, archetypeConfidence) {
+  const predictedWinRate = Math.round(predictWinRate(features) * 10) / 10;
+  const confidenceBase = 62 + (archetypeConfidence || 0) * 0.2 + clamp(score / 4, 0, 18);
+  const confidence = Math.round(clamp(confidenceBase, 55, 94));
+  const drivers = [];
+  if (features.winConCount === 0) drivers.push("No clear win condition lowers conversion rate.");
+  if (features.buildingCount === 0) drivers.push("No building/spawner anchor hurts defense stability.");
+  if (features.lightSpellCount === 0) drivers.push("Missing light spell reduces control consistency.");
+  if (features.heavySpellCount === 0) drivers.push("Missing heavy spell limits punish/finish potential.");
+  if (features.airCounters <= 2) drivers.push("Low anti-air coverage creates matchup risk.");
+  if (drivers.length === 0) drivers.push("Core deck profile is balanced with no major structural penalties.");
+  return { predictedWinRate, confidence, topDrivers: drivers.slice(0, 3) };
+}
+
+function suggestMlUpgrades(cards, towerTroop, baselineWinRate) {
+  const map = new Map(CARDS.map(c => [c.id, c]));
+  const deckIds = cards.map(c => c.id);
+  const deckSet = new Set(deckIds);
+  const candidates = CARDS.filter(c => !deckSet.has(c.id)).slice(0, 80);
+  const out = [];
+
+  for (let slot = 0; slot < cards.length; slot += 1) {
+    const original = cards[slot];
+    for (const incoming of candidates) {
+      const nextIds = [...deckIds];
+      nextIds[slot] = incoming.id;
+      if (new Set(nextIds).size !== 8) continue;
+      const nextCards = nextIds.map(id => map.get(id)).filter(Boolean);
+      if (nextCards.length !== 8) continue;
+      const m = nextCards.map(getMetadata);
+      const f = buildMlFeatures(nextCards, m, nextCards.reduce((s, c) => s + (c.elixirCost || 0), 0) / 8, towerTroop);
+      const wr = predictWinRate(f);
+      const delta = Math.round((wr - baselineWinRate) * 10) / 10;
+      out.push({
+        slot: slot + 1,
+        outgoing: original.name,
+        incoming: incoming.name,
+        predictedWinRate: Math.round(wr * 10) / 10,
+        deltaWinRate: delta
+      });
+    }
+  }
+
+  return out.sort((a, b) => b.deltaWinRate - a.deltaWinRate).slice(0, 3);
+}
+
 function analyzeDeck(cardIds, towerTroop) {
   const unique = [...new Set(cardIds || [])];
   if (unique.length !== 8) {
@@ -204,6 +303,9 @@ function analyzeDeck(cardIds, towerTroop) {
   if (totalScore < 0) totalScore = 0;
 
   const { archetype, confidence } = detectArchetype(cards, metadata, avgElixir, winConditions);
+  const mlFeatures = buildMlFeatures(cards, metadata, avgElixir, tt);
+  const mlForecast = buildMlForecast(mlFeatures, totalScore, confidence);
+  const mlSuggestions = suggestMlUpgrades(cards, tt, mlForecast.predictedWinRate);
 
   if (winConCount === 0) recommendations.push("Add one clear win condition (e.g., Hog Rider, Giant, Balloon, Miner, X-Bow).");
   if (buildingCount === 0) recommendations.push("Consider adding a defensive building for stronger matchup spread.");
@@ -231,7 +333,9 @@ function analyzeDeck(cardIds, towerTroop) {
     towerImpact,
     roleDistribution,
     matchups: buildMatchups(archetype),
-    cards: cards.map(withFlags)
+    cards: cards.map(withFlags),
+    mlForecast,
+    mlSuggestions
   };
 }
 

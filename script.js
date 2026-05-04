@@ -201,8 +201,8 @@ function clearDeck() {
   state.latestAnalysis = null;
   renderSlots();
   renderCardPool();
-  ["towerOptimizerList", "deltaBreakdown", "weaknessProfileList", "patchDriftList", "simDetails"].forEach((id) => renderList(id, []));
-  ["towerOptimizerBest", "deltaSummary", "patchDriftLine", "simSummary"].forEach((id) => setText(id, ""));
+  ["towerOptimizerList", "deltaBreakdown", "weaknessProfileList", "patchDriftList", "simDetails", "mlDriversList", "mlSuggestionsList"].forEach((id) => renderList(id, []));
+  ["towerOptimizerBest", "deltaSummary", "patchDriftLine", "simSummary", "mlForecastLine"].forEach((id) => setText(id, ""));
   weaknessPanelEl?.classList.add("hidden");
   renderBuilderMetrics();
   statusEl.textContent = "Deck cleared.";
@@ -686,6 +686,16 @@ function renderAllAnalysis(data) {
   renderList("strengthsList", data.strengths || []);
   renderList("weaknessesList", data.weaknesses || []);
   renderList("recommendationsList", data.recommendations || []);
+  if (data.mlForecast) {
+    setText("mlForecastLine", `Predicted Win Rate: ${data.mlForecast.predictedWinRate}% (confidence ${data.mlForecast.confidence}%).`);
+    renderList("mlDriversList", data.mlForecast.topDrivers || []);
+  } else {
+    setText("mlForecastLine", "");
+    renderList("mlDriversList", []);
+  }
+  renderList("mlSuggestionsList", (data.mlSuggestions || []).map((s) =>
+    `Slot ${s.slot}: ${s.outgoing} -> ${s.incoming} (Win Rate ${s.predictedWinRate}%, +${s.deltaWinRate}%)`
+  ));
   renderChart(data.breakdown || {});
   weaknessPanelEl?.classList.remove("hidden");
   runWeaknessProfile("anti_air");
@@ -712,6 +722,17 @@ async function runDeltaEngine() {
 
   const baseline = state.latestAnalysis || await analyzePayload({ cardIds: cards.map((c) => c.id), towerTroop: state.selectedTowerTroop });
   state.latestAnalysis = baseline;
+  if (baseline.mlSuggestions && baseline.mlSuggestions.length > 0) {
+    const top = baseline.mlSuggestions[0];
+    setText("deltaSummary", `Best swap (ML): ${top.outgoing} -> ${top.incoming} (Slot ${top.slot}), +${top.deltaWinRate}% predicted win rate.`);
+    renderList("deltaBreakdown", [
+      `Predicted Win Rate after swap: ${top.predictedWinRate}%`,
+      `Model confidence: ${baseline.mlForecast?.confidence ?? "-"}%`,
+      `Based on current tower troop and deck structure.`
+    ]);
+    statusEl.textContent = "Suggested changes ready.";
+    return top;
+  }
 
   const deckIds = cards.map((c) => c.id);
   const candidates = state.cards.filter((c) => !deckIds.includes(c.id)).slice(0, 32);
