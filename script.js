@@ -73,10 +73,10 @@ const TOWER_TROOPS = [
 ];
 
 const TOWER_TROOP_ICONS = {
-  tower_princess: "/assets/towers/tower-princess.svg",
-  royal_chef: "/assets/towers/royal-chef.svg",
-  cannoneer: "/assets/towers/cannoneer.svg",
-  dagger_duchess: "/assets/towers/dagger-duchess.svg"
+  tower_princess: "/assets/towers/tower-princess.png",
+  royal_chef: "/assets/towers/royal-chef.png",
+  cannoneer: "/assets/towers/cannoneer.png",
+  dagger_duchess: "/assets/towers/dagger-duchess.png"
 };
 
 const META_PRESETS = [
