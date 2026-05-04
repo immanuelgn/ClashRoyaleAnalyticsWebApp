@@ -7,11 +7,11 @@ const CARDS = JSON.parse(
 
 const EVO_CARD_SLUGS = new Set([
   "archers", "baby-dragon", "barbarian-barrel", "barbarians", "bats", "battle-ram",
-  "bomber", "cannon", "cannon-cart", "dart-goblin", "electro-dragon", "executioner",
-  "firecracker", "furnace", "giant", "giant-snowball", "goblin-barrel", "goblin-cage",
-  "goblin-drill", "goblin-giant", "goblins", "hunter", "ice-golem", "ice-spirit",
-  "inferno-dragon", "knight", "lumberjack", "magic-archer", "mega-knight", "mega-minion",
-  "mini-pekka", "mortar", "musketeer", "pekka", "royal-ghost", "royal-giant",
+  "bomber", "cannon", "dart-goblin", "electro-dragon", "executioner",
+  "firecracker", "furnace", "giant-snowball", "goblin-barrel", "goblin-cage",
+  "goblin-drill", "goblin-giant", "hunter", "ice-spirit",
+  "inferno-dragon", "knight", "lumberjack", "mega-knight", "mega-minion",
+  "mortar", "musketeer", "pekka", "royal-ghost", "royal-giant",
   "royal-hogs", "royal-recruits", "skeleton-army", "skeleton-barrel", "skeletons",
   "tesla", "valkyrie", "wall-breakers", "witch", "wizard", "zap"
 ]);
@@ -45,7 +45,7 @@ function normalizeTowerTroop(towerTroop) {
 function withFlags(card) {
   const slug = slugify(card.name);
   const isChampion = (card.rarity || "").toLowerCase() === "champion";
-  const isHero = HERO_CARD_SLUGS.has(slug) || isChampion;
+  const isHero = HERO_CARD_SLUGS.has(slug);
   const isEvolution = EVO_CARD_SLUGS.has(slug) && !EVO_FORCE_OFF_SLUGS.has(slug);
   const allowedSlots = ["normal"];
   if (isEvolution) allowedSlots.push("evo");

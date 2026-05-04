@@ -31,11 +31,11 @@ function getApiBaseCandidates() {
 
 const EVO_CARD_SLUGS = new Set([
   "archers", "baby-dragon", "barbarian-barrel", "barbarians", "bats", "battle-ram",
-  "bomber", "cannon", "cannon-cart", "dart-goblin", "electro-dragon", "executioner",
-  "firecracker", "furnace", "giant", "giant-snowball", "goblin-barrel", "goblin-cage",
-  "goblin-drill", "goblin-giant", "goblins", "hunter", "ice-golem", "ice-spirit",
-  "inferno-dragon", "knight", "lumberjack", "magic-archer", "mega-knight", "mega-minion",
-  "mini-pekka", "mortar", "musketeer", "pekka", "royal-ghost", "royal-giant",
+  "bomber", "cannon", "dart-goblin", "electro-dragon", "executioner",
+  "firecracker", "furnace", "giant-snowball", "goblin-barrel", "goblin-cage",
+  "goblin-drill", "goblin-giant", "hunter", "ice-spirit",
+  "inferno-dragon", "knight", "lumberjack", "mega-knight", "mega-minion",
+  "mortar", "musketeer", "pekka", "royal-ghost", "royal-giant",
   "royal-hogs", "royal-recruits", "skeleton-army", "skeleton-barrel", "skeletons",
   "tesla", "valkyrie", "wall-breakers", "witch", "wizard", "zap"
 ]);
@@ -161,7 +161,7 @@ function normalizeCardFlags(cards) {
   return (cards || []).map((c) => {
     const slug = toCardSlug(c.name);
     const isChampion = !!c.isChampion;
-    const isHero = HERO_CARD_SLUGS.has(slug) || isChampion;
+    const isHero = HERO_CARD_SLUGS.has(slug);
     const isEvolution = EVO_CARD_SLUGS.has(slug) && !EVO_FORCE_OFF_SLUGS.has(slug);
     const allowedSlots = ["normal"];
     if (isEvolution) allowedSlots.push("evo");
@@ -327,7 +327,7 @@ function buildCardChip(card, options) {
     </div>
     <div class="name">${card.name}${isPoolCard ? getPoolSpecialSuffix(card) : ""}</div>
     <div class="meta">${card.elixirCost} Elixir</div>
-    ${slotType ? `<div class="mode-line ${slotType}">${getModeLabel(slotType, slotRuleType)}</div>` : ""}
+    ${slotType ? `<div class="mode-line ${slotType}">${getModeLabel(slotType, slotRuleType, card)}</div>` : ""}
     ${canToggleWildMode ? `<div class="mode-switch"><button type="button" class="mode-opt ${currentWildMode === "evo" ? "active" : ""}" data-mode="evo">EVO</button><button type="button" class="mode-opt ${currentWildMode === "hero" ? "active" : ""}" data-mode="hero">HERO</button></div>` : ""}
   `;
 
@@ -409,8 +409,11 @@ function getDisplayImageFallbacks(card, slotType, slotIndex = -1) {
 
 function getPoolSpecialSuffix(card) {
   const evo = !!card.isEvolution;
-  const hero = !!(card.isHero || card.isChampion);
+  const champ = !!card.isChampion;
+  const hero = !!card.isHero && !champ;
+  if (evo && champ) return " /EVO/CHAMP";
   if (evo && hero) return " /EVO/HERO";
+  if (champ) return " /CHAMP";
   if (evo) return " /EVO";
   if (hero) return " /HERO";
   return "";
@@ -438,10 +441,14 @@ window.__crNextImageFallback = function __crNextImageFallback(imgEl) {
   imgEl.removeAttribute("onerror");
 };
 
-function getModeLabel(slotType, slotRuleType) {
-  if (slotRuleType === "wild") return slotType === "hero" ? "WILD-HERO MODE" : "WILD-EVO MODE";
+function getModeLabel(slotType, slotRuleType, card = null) {
+  const champ = !!card?.isChampion;
+  if (slotRuleType === "wild") {
+    if (slotType === "hero") return champ ? "WILD-CHAMP MODE" : "WILD-HERO MODE";
+    return "WILD-EVO MODE";
+  }
   if (slotType === "evo") return "EVO MODE";
-  if (slotType === "hero") return "HERO MODE";
+  if (slotType === "hero") return champ ? "CHAMP MODE" : "HERO MODE";
   return "";
 }
 
@@ -466,6 +473,7 @@ function moveOrSwapSlotCard(from, to) {
   if (!validateDeckComposition(candidate).ok) return statusEl.textContent = validateDeckComposition(candidate).message;
 
   state.deck = candidate;
+  syncWildSlotModes();
   renderSlots();
   renderCardPool();
 }
@@ -516,7 +524,13 @@ function getPreferredSlotOrder(card) {
   return indices;
 }
 
-function removeCardFromSlot(index) { state.deck[index] = null; renderSlots(); renderCardPool(); }
+function removeCardFromSlot(index) {
+  state.deck[index] = null;
+  if (SLOT_RULES[index].type === "wild") delete state.wildSlotModes[index];
+  syncWildSlotModes();
+  renderSlots();
+  renderCardPool();
+}
 
 function placeCardInSlot(cardId, slotIndex) {
   const card = state.cards.find((c) => c.id === cardId);
@@ -535,6 +549,9 @@ function tryPlaceCardInSlot(card, slotIndex) {
   if (!slotCheck.ok) return { ok: false, message: slotCheck.message };
   const deckCheck = validateDeckComposition(candidate);
   if (!deckCheck.ok) return { ok: false, message: deckCheck.message };
+  if (SLOT_RULES[slotIndex].type === "wild") {
+    state.wildSlotModes[slotIndex] = computeWildMode(card, state.wildSlotModes[slotIndex]);
+  }
   state.deck = candidate;
   return { ok: true, message: "" };
 }
@@ -594,10 +611,29 @@ function countSpecialModeUsage(deckState) {
 }
 
 function getWildModeForCard(slotIndex, card) {
-  const preferred = state.wildSlotModes[slotIndex];
-  if (preferred === "evo" || preferred === "hero") return preferred;
-  if (isHeroOrChampion(card)) return "hero";
+  return computeWildMode(card, state.wildSlotModes[slotIndex]);
+}
+
+function computeWildMode(card, preferred) {
+  const canHero = isHeroOrChampion(card);
+  const canEvo = isEvolutionCard(card);
+  if (preferred === "hero" && canHero) return "hero";
+  if (preferred === "evo" && canEvo) return "evo";
+  if (canEvo) return "evo";
+  if (canHero) return "hero";
   return "evo";
+}
+
+function syncWildSlotModes() {
+  for (let i = 0; i < SLOT_RULES.length; i += 1) {
+    if (SLOT_RULES[i].type !== "wild") continue;
+    const card = state.deck[i];
+    if (!card) {
+      delete state.wildSlotModes[i];
+      continue;
+    }
+    state.wildSlotModes[i] = computeWildMode(card, state.wildSlotModes[i]);
+  }
 }
 
 function getVisualMode(card, slotType, slotIndex = -1) {
