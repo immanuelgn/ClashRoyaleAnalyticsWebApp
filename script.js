@@ -30,7 +30,7 @@ function getApiBaseCandidates() {
 }
 
 const EVO_CARD_SLUGS = new Set([
-  "archers", "baby-dragon", "barbarian-barrel", "barbarians", "bats", "battle-ram",
+  "archers", "baby-dragon", "barbarians", "bats", "battle-ram",
   "bomber", "cannon", "dart-goblin", "electro-dragon", "executioner",
   "firecracker", "furnace", "giant-snowball", "goblin-barrel", "goblin-cage",
   "goblin-drill", "goblin-giant", "hunter", "ice-spirit",
