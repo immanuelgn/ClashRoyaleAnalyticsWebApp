@@ -108,6 +108,7 @@ const cardPoolEl = document.getElementById("cardPool");
 const statusEl = document.getElementById("status");
 const searchEl = document.getElementById("searchInput");
 const simDeckSelect = document.getElementById("simDeckSelect");
+const weaknessPanelEl = document.getElementById("weaknessPanel");
 
 document.getElementById("analyzeBtn").addEventListener("click", analyzeDeck);
 document.getElementById("optimizeTowerBtn").addEventListener("click", optimizeTowerTroop);
@@ -202,6 +203,7 @@ function clearDeck() {
   renderCardPool();
   ["towerOptimizerList", "deltaBreakdown", "weaknessProfileList", "patchDriftList", "simDetails"].forEach((id) => renderList(id, []));
   ["towerOptimizerBest", "deltaSummary", "patchDriftLine", "simSummary"].forEach((id) => setText(id, ""));
+  weaknessPanelEl?.classList.add("hidden");
   renderBuilderMetrics();
   statusEl.textContent = "Deck cleared.";
 }
@@ -649,6 +651,8 @@ function renderAllAnalysis(data) {
   renderList("weaknessesList", data.weaknesses || []);
   renderList("recommendationsList", data.recommendations || []);
   renderChart(data.breakdown || {});
+  weaknessPanelEl?.classList.remove("hidden");
+  runWeaknessProfile("anti_air");
 }
 
 async function optimizeTowerTroop() {
@@ -711,11 +715,25 @@ async function runDeltaEngine() {
 function runWeaknessProfile(profile) {
   const data = state.latestAnalysis;
   if (!data) return statusEl.textContent = "Run Analyze Deck first.";
-  const tips = [];
-  if (profile === "anti_air") tips.push("Add +1 anti-air support card.", "Prefer tower troop with stable air coverage.");
-  if (profile === "anti_swarm") tips.push("Keep one light spell + one splash card.", "Avoid all single-target support stacks.");
-  if (profile === "anti_beatdown") tips.push("Use one building + one reset source.", "Keep enough DPS in backline support.");
-  renderList("weaknessProfileList", [...tips, ...(data.weaknesses || []).slice(0, 3)]);
+  const b = data.breakdown || {};
+  const lines = [];
+  if (profile === "anti_air") {
+    if ((b["Air Defense"] || 0) <= 6) lines.push("Air defense is low; add at least one more ranged anti-air card.");
+    else lines.push("Air defense is stable. Keep at least 3 reliable anti-air answers.");
+    if ((b["Reset Access"] || 0) <= 3) lines.push("Reset access is weak; add Zap/Electro utility vs Inferno threats.");
+  }
+  if (profile === "anti_swarm") {
+    if ((b["Swarm Control"] || 0) <= 4) lines.push("Swarm control is weak; add one more splash unit or light spell.");
+    else lines.push("Swarm control is healthy; avoid replacing both splash and light-spell together.");
+    if ((b["Spell Count"] || 0) <= 3) lines.push("Spell count is low; add a cheap spell for cycle swarm control.");
+  }
+  if (profile === "anti_beatdown") {
+    if ((b["Building Coverage"] || 0) <= 4) lines.push("No strong building anchor detected; add Cannon/Tesla/Inferno Tower.");
+    else lines.push("Building/spawner anchor detected; preserve it against beatdown archetypes.");
+    if ((b["Frontline Presence"] || 0) <= 3) lines.push("Frontline pressure is low; add a sturdier tank or mini-tank.");
+    if ((b["Reset Access"] || 0) <= 3) lines.push("Add reset utility to improve heavy-push defense consistency.");
+  }
+  renderList("weaknessProfileList", [...lines, ...(data.weaknesses || []).slice(0, 2)]);
   statusEl.textContent = "Weakness profile ready.";
 }
 

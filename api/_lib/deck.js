@@ -66,8 +66,9 @@ function getMetadata(card) {
   const name = (card.name || "").toLowerCase();
   const role = (card.role || "Support").toLowerCase();
   const attackType = (card.attackType || "Ground").toLowerCase();
-  const isWinCondition = role === "wincondition" || /hog|giant|golem|balloon|barrel|x-bow|mortar|miner/.test(name);
-  const isBuilding = /cannon|tesla|tower|tombstone|x-bow|mortar|hut|furnace|collector|cage|spawner/.test(name);
+  const isWinCondition = role === "wincondition" || /hog|giant|golem|balloon|barrel|x-bow|mortar|miner|ram rider|battle ram|goblin drill/.test(name);
+  const roleIsDefense = role === "defense" || role === "building" || role === "spawner";
+  const isBuilding = roleIsDefense || /cannon|tesla|tower|tombstone|x-bow|mortar|hut|furnace|collector|cage|spawner/.test(name);
   const isLightSpell = /zap|log|snowball|arrows|barbarian barrel|tornado/.test(name);
   const isHeavySpell = /fireball|poison|rocket|lightning/.test(name);
   const isCycleCard = (card.elixirCost || 0) <= 2 || role === "cycle";

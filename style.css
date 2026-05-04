@@ -469,3 +469,7 @@ ul { padding-left: 20px; }
 .card-chip.slot-hero .fx-badge.evo {
   display: none;
 }
+
+.hidden {
+  display: none !important;
+}
