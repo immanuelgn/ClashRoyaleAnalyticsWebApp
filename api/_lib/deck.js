@@ -171,19 +171,42 @@ function suggestMlUpgrades(cards, towerTroop, baselineWinRate) {
   const deckSet = new Set(deckIds);
   const candidates = CARDS.filter(c => !deckSet.has(c.id)).slice(0, 80);
   const out = [];
+  const baseMetadata = cards.map(getMetadata);
+  const baseAvg = cards.reduce((s, c) => s + (c.elixirCost || 0), 0) / 8;
+  const baseWinConCount = baseMetadata.filter(m => m.isWinCondition).length;
+
+  const roleGroup = (card) => {
+    const role = String(card?.role || "").toLowerCase();
+    if (role === "wincondition") return "wincon";
+    if (role === "spell") return "spell";
+    if (role === "defense" || role === "building" || role === "spawner") return "defense";
+    if ((card?.elixirCost || 0) <= 2) return "cycle";
+    return "support";
+  };
 
   for (let slot = 0; slot < cards.length; slot += 1) {
     const original = cards[slot];
+    const outGroup = roleGroup(original);
+    const outElixir = Number(original.elixirCost || 0);
     for (const incoming of candidates) {
+      const inGroup = roleGroup(incoming);
+      const inElixir = Number(incoming.elixirCost || 0);
+      if (inGroup !== outGroup) continue;
+      if (Math.abs(inElixir - outElixir) > 2.0) continue;
+
       const nextIds = [...deckIds];
       nextIds[slot] = incoming.id;
       if (new Set(nextIds).size !== 8) continue;
       const nextCards = nextIds.map(id => map.get(id)).filter(Boolean);
       if (nextCards.length !== 8) continue;
       const m = nextCards.map(getMetadata);
+      const nextWinConCount = m.filter(x => x.isWinCondition).length;
+      if (Math.abs(nextWinConCount - baseWinConCount) > 1) continue;
       const f = buildMlFeatures(nextCards, m, nextCards.reduce((s, c) => s + (c.elixirCost || 0), 0) / 8, towerTroop);
+      if (Math.abs(f.avgElixir - baseAvg) > 0.55) continue;
       const wr = predictWinRate(f);
       const delta = Math.round((wr - baselineWinRate) * 10) / 10;
+      if (delta < 1.0) continue;
       out.push({
         slot: slot + 1,
         outgoing: original.name,
@@ -312,7 +335,12 @@ function analyzeDeck(cardIds, towerTroop) {
   const { archetype, confidence } = detectArchetype(cards, metadata, avgElixir, winConditions);
   const mlFeatures = buildMlFeatures(cards, metadata, avgElixir, tt);
   const mlForecast = buildMlForecast(mlFeatures, totalScore, confidence);
-  const mlSuggestions = suggestMlUpgrades(cards, tt, mlForecast.predictedWinRate);
+  let mlSuggestions = suggestMlUpgrades(cards, tt, mlForecast.predictedWinRate);
+  if (mlForecast.predictedWinRate >= 62) {
+    mlSuggestions = mlSuggestions.filter((s) => Number(s.deltaWinRate) >= 2.2);
+  } else if (mlForecast.predictedWinRate >= 56) {
+    mlSuggestions = mlSuggestions.filter((s) => Number(s.deltaWinRate) >= 1.4);
+  }
 
   if (winConCount === 0) recommendations.push("Add one clear win condition (e.g., Hog Rider, Giant, Balloon, Miner, X-Bow).");
   if (buildingCount === 0) recommendations.push("Consider adding a defensive building for stronger matchup spread.");

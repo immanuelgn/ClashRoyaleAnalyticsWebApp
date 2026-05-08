@@ -101,27 +101,90 @@
         </section>
 
         <section class="panel">
+          <h2>Quick Read</h2>
+          <div class="quick-read-grid">
+            <div class="score-dial">
+              <svg viewBox="0 0 120 120" class="dial-svg" aria-hidden="true">
+                <circle cx="60" cy="60" r="50" class="dial-track"></circle>
+                <circle cx="60" cy="60" r="50" class="dial-value" id="scoreDialArc"></circle>
+              </svg>
+              <div class="dial-center">
+                <strong id="scoreDialValue">-</strong>
+                <span>/ 130</span>
+              </div>
+            </div>
+            <div class="subscore-bars">
+              <div class="bar-row"><span>Offense</span><div class="bar"><i id="barOffense"></i></div></div>
+              <div class="bar-row"><span>Defense</span><div class="bar"><i id="barDefense"></i></div></div>
+              <div class="bar-row"><span>Spells</span><div class="bar"><i id="barSpells"></i></div></div>
+              <div class="bar-row"><span>Cycle</span><div class="bar"><i id="barCycle"></i></div></div>
+              <div class="bar-row"><span>Consistency</span><div class="bar"><i id="barConsistency"></i></div></div>
+            </div>
+          </div>
+          <div class="chip-row">
+            <span class="chip" id="mlWinChip">Win Rate: -</span>
+            <span class="chip" id="mlConfChip">ML Confidence: -</span>
+            <span class="chip" id="towerChip">Tower Fit: -</span>
+          </div>
+          <p class="headline-line" id="quickVerdict"></p>
+        </section>
+
+        <section class="panel battle-snapshot">
+          <h2>Battle Snapshot</h2>
+          <div class="snapshot-grid">
+            <div class="phone-frame">
+              <div class="phone-notch"></div>
+              <div class="phone-screen">
+                <div class="phone-header">
+                  <span id="snapArchetype">Archetype: -</span>
+                  <span id="snapTower">Tower: -</span>
+                </div>
+                <div class="winrate-ring">
+                  <svg viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="46" class="ring-track"></circle>
+                    <circle cx="60" cy="60" r="46" class="ring-value" id="winRateArc"></circle>
+                  </svg>
+                  <div class="ring-label">
+                    <strong id="snapWinrate">-</strong>
+                    <span>Pred Win Rate</span>
+                  </div>
+                </div>
+                <div class="phone-tags">
+                  <span id="snapDeckPace" class="phone-tag">Pace: -</span>
+                  <span id="snapRiskTag" class="phone-tag danger">Risk: -</span>
+                </div>
+              </div>
+            </div>
+            <div class="snapshot-right">
+              <canvas id="radarChart" height="180"></canvas>
+              <div id="insightCards" class="insight-cards"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
           <h2>Subscores</h2>
           <ul id="subScoresList"></ul>
           <h2>Tower Impact</h2>
           <ul id="towerImpactList"></ul>
         </section>
 
-        <details class="panel foldout" open>
+        <details class="panel foldout">
           <summary>Tower Optimizer</summary>
           <h2>Tower Optimizer</h2>
           <ul id="towerOptimizerList"></ul>
           <p id="towerOptimizerBest"></p>
         </details>
 
-        <details class="panel foldout" open>
+        <details class="panel foldout">
           <summary>Suggested Changes</summary>
           <h2>Suggested Changes</h2>
           <p id="deltaSummary"></p>
+          <div id="swapBoard" class="swap-board"></div>
           <ul id="deltaBreakdown"></ul>
         </details>
 
-        <details class="panel foldout" open>
+        <details class="panel foldout">
           <summary>ML Forecast</summary>
           <h2>ML Forecast</h2>
           <p id="mlForecastLine"></p>
@@ -132,6 +195,11 @@
 
         <section class="panel hidden" id="weaknessPanel">
           <h2>Weakness Profiler</h2>
+          <div class="risk-grid" id="riskGrid">
+            <div class="risk-card"><span>Air Risk</span><div class="risk-bar"><i id="riskAir"></i></div><b id="riskAirLabel">-</b></div>
+            <div class="risk-card"><span>Swarm Risk</span><div class="risk-bar"><i id="riskSwarm"></i></div><b id="riskSwarmLabel">-</b></div>
+            <div class="risk-card"><span>Beatdown Risk</span><div class="risk-bar"><i id="riskBeatdown"></i></div><b id="riskBeatdownLabel">-</b></div>
+          </div>
           <div class="weakness-actions">
             <button class="weakness-btn" data-profile="anti_air">Struggle vs Air</button>
             <button class="weakness-btn" data-profile="anti_swarm">Struggle vs Swarm</button>
@@ -167,7 +235,7 @@
   </main>
 
   <script src="config.js?v=20260502f"></script>
-  <script src="script.js?v=20260504a"></script>
+  <script src="script.js?v=20260508b"></script>
 </body>
 </html>
 

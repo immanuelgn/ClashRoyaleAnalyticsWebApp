@@ -1,4 +1,5 @@
 let chartInstance = null;
+let radarChartInstance = null;
 let ACTIVE_API_BASE = window.__CR_API_BASE__ || "http://127.0.0.1:7295";
 const ASSET_VARIANT_BASE = "https://raw.githubusercontent.com/RoyaleAPI/cr-api-assets/master/cards/";
 const REV_KEY = "cr_deck_revisions_v1";
@@ -134,6 +135,8 @@ async function boot() {
     renderCardPool();
     renderMetaPresets();
     renderRevisionList();
+    renderQuickRead(null);
+    renderBattleSnapshot(null);
     statusEl.textContent = "Drag cards, choose tower troop, then analyze.";
   } catch (err) {
     console.error(err);
@@ -203,6 +206,12 @@ function clearDeck() {
   renderCardPool();
   ["towerOptimizerList", "deltaBreakdown", "weaknessProfileList", "patchDriftList", "simDetails", "mlDriversList", "mlSuggestionsList"].forEach((id) => renderList(id, []));
   ["towerOptimizerBest", "deltaSummary", "patchDriftLine", "simSummary", "mlForecastLine"].forEach((id) => setText(id, ""));
+  renderSwapBoard([]);
+  setRisk("riskAir", "riskAirLabel", 0);
+  setRisk("riskSwarm", "riskSwarmLabel", 0);
+  setRisk("riskBeatdown", "riskBeatdownLabel", 0);
+  renderQuickRead(null);
+  renderBattleSnapshot(null);
   weaknessPanelEl?.classList.add("hidden");
   renderBuilderMetrics();
   statusEl.textContent = "Deck cleared.";
@@ -686,6 +695,7 @@ function renderAllAnalysis(data) {
   renderList("strengthsList", data.strengths || []);
   renderList("weaknessesList", data.weaknesses || []);
   renderList("recommendationsList", data.recommendations || []);
+  renderQuickRead(data);
   if (data.mlForecast) {
     setText("mlForecastLine", `Predicted Win Rate: ${data.mlForecast.predictedWinRate}% (confidence ${data.mlForecast.confidence}%).`);
     renderList("mlDriversList", data.mlForecast.topDrivers || []);
@@ -699,8 +709,74 @@ function renderAllAnalysis(data) {
     : ["No strong swap suggested. Deck already looks well-optimized in current model constraints."]
   );
   renderChart(data.breakdown || {});
+  renderRiskBars(data);
+  renderBattleSnapshot(data);
   weaknessPanelEl?.classList.remove("hidden");
   runWeaknessProfile("anti_air");
+}
+
+function renderQuickRead(data) {
+  const arc = document.getElementById("scoreDialArc");
+  const dialVal = document.getElementById("scoreDialValue");
+  const verdict = document.getElementById("quickVerdict");
+  const mlWinChip = document.getElementById("mlWinChip");
+  const mlConfChip = document.getElementById("mlConfChip");
+  const towerChip = document.getElementById("towerChip");
+  const maxScore = 130;
+  const r = 50;
+  const c = 2 * Math.PI * r;
+
+  if (!data) {
+    if (arc) arc.style.strokeDashoffset = `${c}`;
+    if (dialVal) dialVal.textContent = "-";
+    if (verdict) verdict.textContent = "Build your deck and click Analyze to get a quick visual verdict.";
+    if (mlWinChip) mlWinChip.textContent = "Win Rate: -";
+    if (mlConfChip) mlConfChip.textContent = "ML Confidence: -";
+    if (towerChip) towerChip.textContent = "Tower Fit: -";
+    ["barOffense", "barDefense", "barSpells", "barCycle", "barConsistency"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.style.width = "0%";
+    });
+    return;
+  }
+
+  const score = Number(data.score || 0);
+  const pct = Math.max(0, Math.min(1, score / maxScore));
+  if (arc) arc.style.strokeDashoffset = `${c * (1 - pct)}`;
+  if (dialVal) dialVal.textContent = `${Math.round(score)}`;
+
+  const subs = data.subScores || {};
+  const maxes = { Offense: 35, Defense: 25, Spells: 25, Cycle: 20, Consistency: 25 };
+  const map = [
+    ["barOffense", "Offense"],
+    ["barDefense", "Defense"],
+    ["barSpells", "Spells"],
+    ["barCycle", "Cycle"],
+    ["barConsistency", "Consistency"]
+  ];
+  map.forEach(([id, key]) => {
+    const v = Number(subs[key] || 0);
+    const max = maxes[key] || 20;
+    const width = Math.max(0, Math.min(100, (v / max) * 100));
+    const el = document.getElementById(id);
+    if (el) el.style.width = `${width}%`;
+  });
+
+  const winRate = Number(data.mlForecast?.predictedWinRate || 0);
+  const conf = Number(data.mlForecast?.confidence || 0);
+  const towerImpactTotal = Object.values(data.towerImpact || {}).reduce((sum, v) => sum + Number(v || 0), 0);
+  if (mlWinChip) mlWinChip.textContent = `Win Rate: ${winRate > 0 ? `${winRate}%` : "-"}`;
+  if (mlConfChip) mlConfChip.textContent = `ML Confidence: ${conf > 0 ? `${conf}%` : "-"}`;
+  if (towerChip) towerChip.textContent = `Tower Fit: ${towerImpactTotal >= 8 ? "Strong" : towerImpactTotal >= 3 ? "Neutral" : "Weak"}`;
+
+  let tone = "Balanced";
+  if (score >= 108) tone = "Meta-ready";
+  else if (score >= 92) tone = "Competitive";
+  else if (score >= 75) tone = "Playable";
+  else tone = "Needs tuning";
+  const archetype = data.archetype || "Unknown";
+  const winCons = (data.winConditions || []).join(", ") || "No clear win condition";
+  if (verdict) verdict.textContent = `${tone}: ${archetype} shell, ${winCons}. Use foldouts below for deep tuning details.`;
 }
 
 async function optimizeTowerTroop() {
@@ -742,6 +818,7 @@ async function runDeltaEngine() {
     const top = baseline.mlSuggestions.find((x) => Number(x.deltaWinRate) >= 1.0);
     if (!top) {
       setText("deltaSummary", "No high-confidence one-card upgrade found. Current deck structure is already strong.");
+      renderSwapBoard([]);
       renderList("deltaBreakdown", [
         `Predicted Win Rate: ${baseline.mlForecast?.predictedWinRate ?? "-"}%`,
         `Model confidence: ${baseline.mlForecast?.confidence ?? "-"}%`,
@@ -751,6 +828,7 @@ async function runDeltaEngine() {
       return null;
     }
     setText("deltaSummary", `Best swap (ML): ${top.outgoing} -> ${top.incoming} (Slot ${top.slot}), +${top.deltaWinRate}% predicted win rate.`);
+    renderSwapBoard((baseline.mlSuggestions || []).filter((x) => Number(x.deltaWinRate) >= 1.0).slice(0, 3));
     renderList("deltaBreakdown", [
       `Predicted Win Rate after swap: ${top.predictedWinRate}%`,
       `Model confidence: ${baseline.mlForecast?.confidence ?? "-"}%`,
@@ -781,11 +859,21 @@ async function runDeltaEngine() {
 
   if (!best) {
     setText("deltaSummary", "No better one-card swap found in sampled candidates.");
+    renderSwapBoard([]);
     renderList("deltaBreakdown", []);
     return null;
   }
 
   setText("deltaSummary", `Best swap: ${best.outgoing.name} -> ${best.incoming.name} (Slot ${best.slot + 1}). ${baseline.score} -> ${best.analyzed.score} (${best.delta >= 0 ? "+" : ""}${best.delta}).`);
+  renderSwapBoard([
+    {
+      slot: best.slot + 1,
+      outgoing: best.outgoing.name,
+      incoming: best.incoming.name,
+      predictedWinRate: Number(best.analyzed.mlForecast?.predictedWinRate || baseline.mlForecast?.predictedWinRate || 0),
+      deltaWinRate: Number(best.delta)
+    }
+  ]);
   renderList("deltaBreakdown", [
     `Archetype: ${baseline.archetype} -> ${best.analyzed.archetype}`,
     `Average Elixir Cost: ${Number(baseline.averageElixir).toFixed(1)} -> ${Number(best.analyzed.averageElixir).toFixed(1)}`,
@@ -820,6 +908,52 @@ function runWeaknessProfile(profile) {
   statusEl.textContent = "Weakness profile ready.";
 }
 
+function renderSwapBoard(suggestions) {
+  const root = document.getElementById("swapBoard");
+  if (!root) return;
+  root.innerHTML = "";
+  if (!Array.isArray(suggestions) || suggestions.length === 0) return;
+  suggestions.forEach((s) => {
+    const delta = Number(s.deltaWinRate || 0);
+    const card = document.createElement("div");
+    card.className = "swap-card";
+    const head = document.createElement("div");
+    head.className = "swap-head";
+    const label = document.createElement("span");
+    label.textContent = `Slot ${s.slot}: ${s.outgoing} -> ${s.incoming}`;
+    const right = document.createElement("span");
+    right.className = "swap-delta";
+    right.textContent = `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%`;
+    head.appendChild(label);
+    head.appendChild(right);
+    const meter = document.createElement("div");
+    meter.className = "swap-meter";
+    const fill = document.createElement("i");
+    fill.style.width = `${Math.max(0, Math.min(100, (Math.abs(delta) / 10) * 100))}%`;
+    meter.appendChild(fill);
+    card.appendChild(head);
+    card.appendChild(meter);
+    root.appendChild(card);
+  });
+}
+
+function renderRiskBars(data) {
+  const b = data?.breakdown || {};
+  const air = Math.max(0, Math.min(100, 100 - (Number(b["Air Defense"] || 0) / 12) * 100));
+  const swarm = Math.max(0, Math.min(100, 100 - ((Number(b["Swarm Control"] || 0) + Number(b["Spell Count"] || 0)) / 16) * 100));
+  const beatdown = Math.max(0, Math.min(100, 100 - ((Number(b["Building Coverage"] || 0) + Number(b["Frontline Presence"] || 0)) / 18) * 100));
+  setRisk("riskAir", "riskAirLabel", air);
+  setRisk("riskSwarm", "riskSwarmLabel", swarm);
+  setRisk("riskBeatdown", "riskBeatdownLabel", beatdown);
+}
+
+function setRisk(barId, labelId, value) {
+  const bar = document.getElementById(barId);
+  const label = document.getElementById(labelId);
+  if (bar) bar.style.width = `${value}%`;
+  if (label) label.textContent = value >= 70 ? "High Risk" : value >= 40 ? "Medium Risk" : "Low Risk";
+}
+
 function renderPatchDrift(data) {
   const drift = Math.max(0, Math.round(((data.archetypeConfidence || 0) - (data.score || 0)) * 0.6));
   const level = drift >= 8 ? "High" : drift >= 4 ? "Medium" : "Low";
@@ -829,6 +963,109 @@ function renderPatchDrift(data) {
     "Use Delta Engine for low-risk one-card tune-ups.",
     "Keep 2 backup swaps for your worst matchup archetype."
   ]);
+}
+
+function renderBattleSnapshot(data) {
+  const arc = document.getElementById("winRateArc");
+  const snapWin = document.getElementById("snapWinrate");
+  const snapArc = document.getElementById("snapArchetype");
+  const snapTower = document.getElementById("snapTower");
+  const snapPace = document.getElementById("snapDeckPace");
+  const snapRisk = document.getElementById("snapRiskTag");
+  const insightRoot = document.getElementById("insightCards");
+  const radius = 46;
+  const circ = 2 * Math.PI * radius;
+
+  if (!data) {
+    if (arc) arc.style.strokeDashoffset = `${circ}`;
+    if (snapWin) snapWin.textContent = "-";
+    if (snapArc) snapArc.textContent = "Archetype: -";
+    if (snapTower) snapTower.textContent = "Tower: -";
+    if (snapPace) snapPace.textContent = "Pace: -";
+    if (snapRisk) snapRisk.textContent = "Risk: -";
+    if (insightRoot) insightRoot.innerHTML = "";
+    if (radarChartInstance) {
+      radarChartInstance.destroy();
+      radarChartInstance = null;
+    }
+    return;
+  }
+
+  const winRate = Number(data.mlForecast?.predictedWinRate || 0);
+  const scorePct = Math.max(0, Math.min(1, winRate / 100));
+  if (arc) arc.style.strokeDashoffset = `${circ * (1 - scorePct)}`;
+  if (snapWin) snapWin.textContent = `${winRate.toFixed(1)}%`;
+  if (snapArc) snapArc.textContent = `Archetype: ${data.archetype || "-"}`;
+  if (snapTower) snapTower.textContent = `Tower: ${labelTower(data.towerTroop || state.selectedTowerTroop)}`;
+  const avg = Number(data.averageElixir || 0);
+  const pace = avg <= 3.0 ? "Fast" : avg <= 3.8 ? "Balanced" : "Heavy";
+  if (snapPace) snapPace.textContent = `Pace: ${pace}`;
+
+  const b = data.breakdown || {};
+  const riskValue = Math.max(
+    Math.max(0, Math.min(100, 100 - (Number(b["Air Defense"] || 0) / 12) * 100)),
+    Math.max(0, Math.min(100, 100 - ((Number(b["Swarm Control"] || 0) + Number(b["Spell Count"] || 0)) / 16) * 100)),
+    Math.max(0, Math.min(100, 100 - ((Number(b["Building Coverage"] || 0) + Number(b["Frontline Presence"] || 0)) / 18) * 100))
+  );
+  if (snapRisk) snapRisk.textContent = `Risk: ${riskValue >= 70 ? "High" : riskValue >= 40 ? "Medium" : "Low"}`;
+
+  renderRadarChart(data.subScores || {});
+  renderInsightCards(data);
+}
+
+function renderRadarChart(subScores) {
+  const ctx = document.getElementById("radarChart")?.getContext("2d");
+  if (!ctx) return;
+  const labels = ["Offense", "Defense", "Spells", "Cycle", "Consistency"];
+  const values = labels.map((k) => Number(subScores[k] || 0));
+  if (radarChartInstance) radarChartInstance.destroy();
+  radarChartInstance = new Chart(ctx, {
+    type: "radar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Deck Profile",
+        data: values,
+        borderColor: "#22d3ee",
+        backgroundColor: "rgba(34,211,238,0.18)",
+        pointBackgroundColor: "#f59e0b",
+        pointRadius: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        r: {
+          min: 0,
+          max: 35,
+          ticks: { display: false },
+          pointLabels: { color: "#c7d7f2", font: { size: 11 } },
+          grid: { color: "rgba(148,163,184,.25)" },
+          angleLines: { color: "rgba(148,163,184,.2)" }
+        }
+      }
+    }
+  });
+}
+
+function renderInsightCards(data) {
+  const root = document.getElementById("insightCards");
+  if (!root) return;
+  const strength = (data.strengths || [])[0] || "No major strength detected yet.";
+  const weakness = (data.weaknesses || [])[0] || "No major weakness detected.";
+  const recommendation = (data.recommendations || [])[0] || "No recommendation.";
+  root.innerHTML = "";
+  [
+    { title: "Strong Point", body: strength, cls: "good" },
+    { title: "Biggest Risk", body: weakness, cls: "bad" },
+    { title: "Best Next Move", body: recommendation, cls: "warn" }
+  ].forEach((item) => {
+    const card = document.createElement("article");
+    card.className = `insight-card ${item.cls}`;
+    card.innerHTML = `<h4>${item.title}</h4><p>${item.body}</p>`;
+    root.appendChild(card);
+  });
 }
 
 async function runMatchupSim() {

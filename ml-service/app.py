@@ -108,7 +108,8 @@ def build_suggestions(card_ids: List[int], tower_troop: str, baseline: float):
             if abs(float(next_feats.get("avg_elixir", base_avg)) - base_avg) > 0.55:
                 continue
             delta = round(wr - baseline, 1)
-            if delta < 1.0:
+            min_delta = 2.2 if baseline >= 62 else (1.4 if baseline >= 56 else 1.0)
+            if delta < min_delta:
                 continue
             suggestions.append(
                 {
