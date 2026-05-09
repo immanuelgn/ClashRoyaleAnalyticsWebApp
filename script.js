@@ -206,10 +206,14 @@ function clearDeck() {
   renderCardPool();
   ["towerOptimizerList", "deltaBreakdown", "weaknessProfileList", "patchDriftList", "simDetails", "mlDriversList", "mlSuggestionsList"].forEach((id) => renderList(id, []));
   ["towerOptimizerBest", "deltaSummary", "patchDriftLine", "simSummary", "mlForecastLine"].forEach((id) => setText(id, ""));
+  renderMetricTiles("subscoreTiles", []);
+  renderMetricTiles("towerImpactTiles", []);
+  renderMlForecastVisual(null);
   renderSwapBoard([]);
   setRisk("riskAir", "riskAirLabel", 0);
   setRisk("riskSwarm", "riskSwarmLabel", 0);
   setRisk("riskBeatdown", "riskBeatdownLabel", 0);
+  setPatchDriftMeter(0);
   renderQuickRead(null);
   renderBattleSnapshot(null);
   weaknessPanelEl?.classList.add("hidden");
@@ -692,10 +696,13 @@ function renderAllAnalysis(data) {
   setText("winCons", `Win Conditions: ${(data.winConditions || []).join(" | ") || "None detected"}`);
   renderList("subScoresList", objectToList(data.subScores));
   renderList("towerImpactList", objectToList(data.towerImpact));
+  renderMetricTiles("subscoreTiles", buildVisualMetrics(data.subScores, { Offense: 35, Defense: 25, Spells: 25, Cycle: 20, Consistency: 25 }));
+  renderMetricTiles("towerImpactTiles", buildVisualMetrics(data.towerImpact, {}, 10));
   renderList("strengthsList", data.strengths || []);
   renderList("weaknessesList", data.weaknesses || []);
   renderList("recommendationsList", data.recommendations || []);
   renderQuickRead(data);
+  renderMlForecastVisual(data);
   if (data.mlForecast) {
     setText("mlForecastLine", `Predicted Win Rate: ${data.mlForecast.predictedWinRate}% (confidence ${data.mlForecast.confidence}%).`);
     renderList("mlDriversList", data.mlForecast.topDrivers || []);
@@ -954,10 +961,66 @@ function setRisk(barId, labelId, value) {
   if (label) label.textContent = value >= 70 ? "High Risk" : value >= 40 ? "Medium Risk" : "Low Risk";
 }
 
+function buildVisualMetrics(obj, maxMap = {}, defaultMax = 35) {
+  return Object.entries(obj || {}).map(([k, v]) => {
+    const num = Number(v || 0);
+    const max = Number(maxMap[k] || defaultMax || 1);
+    return {
+      name: k,
+      value: num,
+      pct: Math.max(0, Math.min(100, (num / max) * 100))
+    };
+  });
+}
+
+function renderMetricTiles(targetId, metrics) {
+  const root = document.getElementById(targetId);
+  if (!root) return;
+  root.innerHTML = "";
+  if (!Array.isArray(metrics) || metrics.length === 0) return;
+  metrics.forEach((m) => {
+    const item = document.createElement("article");
+    item.className = "metric-tile-visual";
+    item.innerHTML = `
+      <div class="name">${m.name}</div>
+      <div class="value">${m.value}</div>
+      <div class="mini-bar"><i style="width:${m.pct}%;"></i></div>
+    `;
+    root.appendChild(item);
+  });
+}
+
+function renderMlForecastVisual(data) {
+  const root = document.getElementById("mlForecastVisual");
+  if (!root) return;
+  root.innerHTML = "";
+  if (!data?.mlForecast) return;
+  const wr = Number(data.mlForecast.predictedWinRate || 0).toFixed(1);
+  const conf = Number(data.mlForecast.confidence || 0);
+  const sugg = (data.mlSuggestions || []).filter((s) => Number(s.deltaWinRate) > 0).length;
+  const cards = [
+    { label: "Predicted Win Rate", main: `${wr}%` },
+    { label: "Model Confidence", main: `${conf}%` },
+    { label: "Viable Swap Options", main: `${sugg}` }
+  ];
+  cards.forEach((c) => {
+    const node = document.createElement("article");
+    node.className = "ml-forecast-card";
+    node.innerHTML = `<div class="label">${c.label}</div><div class="main">${c.main}</div>`;
+    root.appendChild(node);
+  });
+}
+
+function setPatchDriftMeter(pct) {
+  const meter = document.getElementById("patchDriftMeter");
+  if (meter) meter.style.width = `${Math.max(0, Math.min(100, Number(pct) || 0))}%`;
+}
+
 function renderPatchDrift(data) {
   const drift = Math.max(0, Math.round(((data.archetypeConfidence || 0) - (data.score || 0)) * 0.6));
   const level = drift >= 8 ? "High" : drift >= 4 ? "Medium" : "Low";
   setText("patchDriftLine", `Patch Drift Risk: ${level} (${drift}).`);
+  setPatchDriftMeter(Math.max(0, Math.min(100, drift * 10)));
   renderList("patchDriftList", [
     "Re-run Tower Optimizer after each patch.",
     "Use Delta Engine for low-risk one-card tune-ups.",

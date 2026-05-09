@@ -19,6 +19,32 @@ body {
     radial-gradient(circle at 85% 10%, rgba(168, 85, 247, 0.22), transparent 32%),
     linear-gradient(180deg, #070f22, #050915 55%, #04070f);
 }
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 160px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.18;
+  filter: saturate(1.15) drop-shadow(0 0 22px rgba(56,189,248,.28));
+}
+body::before {
+  left: 0;
+  background:
+    url("https://royaleapi.github.io/cr-api-assets/cards/archers-ev1.png") 50% 8%/120px auto no-repeat,
+    url("https://royaleapi.github.io/cr-api-assets/cards/knight-hero.png") 45% 42%/125px auto no-repeat,
+    url("https://royaleapi.github.io/cr-api-assets/cards/royal-hogs-ev1.png") 52% 76%/120px auto no-repeat;
+}
+body::after {
+  right: 0;
+  background:
+    url("https://royaleapi.github.io/cr-api-assets/cards/firecracker-ev1.png") 46% 12%/122px auto no-repeat,
+    url("https://royaleapi.github.io/cr-api-assets/cards/archer-queen.png") 55% 44%/122px auto no-repeat,
+    url("https://royaleapi.github.io/cr-api-assets/cards/royal-ghost-ev1.png") 48% 78%/116px auto no-repeat;
+}
 
 .container { max-width: 1800px; width: min(1800px, 98vw); margin: 0 auto; padding: 24px; }
 h1 { margin-bottom: 8px; }
@@ -607,8 +633,85 @@ ul { padding-left: 20px; }
   border-radius: 8px;
   padding: 8px 10px;
 }
+#subScoresList,
+#towerImpactList {
+  display: none;
+}
+.metric-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.metric-tile-visual {
+  border: 1px solid #335481;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: linear-gradient(165deg, #0c1b37, #0f2a4a);
+}
+.metric-tile-visual .name {
+  font-size: 12px;
+  color: #bfdbfe;
+  margin-bottom: 6px;
+}
+.metric-tile-visual .value {
+  font-size: 18px;
+  font-weight: 800;
+}
+.mini-bar {
+  margin-top: 6px;
+  height: 7px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(51,65,85,.95);
+  background: rgba(2,6,23,.65);
+}
+.mini-bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  transition: width .24s ease;
+  background: linear-gradient(90deg, #22d3ee, #a855f7);
+}
+.ml-forecast-visual {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.ml-forecast-card {
+  border: 1px solid #335481;
+  border-radius: 10px;
+  background: linear-gradient(165deg, #0c1b37, #0f2a4a);
+  padding: 10px;
+}
+.ml-forecast-card .label {
+  font-size: 12px;
+  color: #bfdbfe;
+}
+.ml-forecast-card .main {
+  font-size: 22px;
+  font-weight: 900;
+  margin-top: 2px;
+}
+.drift-meter {
+  margin: 6px 0 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(51,65,85,.9);
+  background: rgba(2,6,23,.7);
+  overflow: hidden;
+}
+.drift-meter i {
+  display: block;
+  width: 0;
+  height: 100%;
+  transition: width .25s ease;
+  background: linear-gradient(90deg, #22c55e, #f59e0b, #ef4444);
+}
 
 @media (max-width: 800px) {
+  body::before, body::after { display: none; }
   .dashboard-grid { grid-template-columns: 1fr; }
   .left-column .panel:first-child { position: static; }
   .deck-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -620,6 +723,7 @@ ul { padding-left: 20px; }
   .risk-grid { grid-template-columns: 1fr; }
   .snapshot-grid { grid-template-columns: 1fr; }
   .insight-cards { grid-template-columns: 1fr; }
+  .ml-forecast-visual { grid-template-columns: 1fr; }
 }
 .card-chip.slot-evo .card-img { filter: saturate(1.25) contrast(1.05) drop-shadow(0 0 10px rgba(168,85,247,.45)); }
 .card-chip.slot-hero .card-img { filter: saturate(1.22) contrast(1.08) drop-shadow(0 0 10px rgba(245,158,11,.45)); }

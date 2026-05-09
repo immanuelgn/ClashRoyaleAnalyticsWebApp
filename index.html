@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Clash Royale Deck Analytics</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=20260508c" />
 </head>
 <body>
   <main class="container">
@@ -164,8 +164,10 @@
 
         <section class="panel">
           <h2>Subscores</h2>
+          <div id="subscoreTiles" class="metric-tiles"></div>
           <ul id="subScoresList"></ul>
           <h2>Tower Impact</h2>
+          <div id="towerImpactTiles" class="metric-tiles"></div>
           <ul id="towerImpactList"></ul>
         </section>
 
@@ -187,6 +189,7 @@
         <details class="panel foldout">
           <summary>ML Forecast</summary>
           <h2>ML Forecast</h2>
+          <div id="mlForecastVisual" class="ml-forecast-visual"></div>
           <p id="mlForecastLine"></p>
           <ul id="mlDriversList"></ul>
           <h3>ML Upgrade Suggestions</h3>
@@ -212,6 +215,7 @@
           <summary>Patch Drift</summary>
           <h2>Patch Drift</h2>
           <p id="patchDriftLine"></p>
+          <div class="drift-meter"><i id="patchDriftMeter"></i></div>
           <ul id="patchDriftList"></ul>
         </details>
 
@@ -235,7 +239,7 @@
   </main>
 
   <script src="config.js?v=20260502f"></script>
-  <script src="script.js?v=20260508b"></script>
+  <script src="script.js?v=20260508c"></script>
 </body>
 </html>
 
