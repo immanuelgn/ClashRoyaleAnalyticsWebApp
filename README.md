@@ -1,36 +1,34 @@
-﻿# ClashRoyaleAnalyticsWebApp
+# Clash Royale Analytics Web App
 
-Production-oriented Clash Royale deck intelligence platform focused on Evo/Hero/Champion deck construction, matchup quality, and upgrade recommendations.
+Interactive deck analytics platform for Clash Royale with Evo/Hero/Champion-aware deck building, matchup scoring, and ML-assisted card swap suggestions.
 
-Live app: https://clashroyaleanalyticswebapp.vercel.app
+Live: https://clashroyaleanalyticswebapp.vercel.app
 
-## What I Built
+## Highlights
 
-- Real-time deck builder with game-accurate slot constraints:
+- Drag-and-drop deck builder with current slot rules:
   - Evo slot
   - Wild slot (Evo/Hero/Champion)
   - Hero/Champion slot
-- Card-aware analysis engine:
-  - archetype detection
-  - win-condition clarity
-  - subscore breakdown (offense/defense/spells/cycle/consistency)
-  - matchup simulation against meta-style decks
-- Tower troop optimizer with blended structural + ML ranking logic.
-- ML recommendation pipeline (Python):
-  - win-rate forecast
-  - constrained one-card upgrade suggestions
-  - feedback ingestion endpoint for future retraining
+- Card rendering pipeline for normal, Evo, Hero, and Champion variants.
+- Deck analysis output:
+  - archetype + confidence
+  - role balance and sub-scores
+  - weakness profiling
+  - matchup simulation vs meta deck presets
+- Tower troop optimizer integrated into analysis flow.
+- ML integration (Python/FastAPI) for predicted win rate and upgrade candidates.
 
 ## Tech Stack
 
-- Frontend: HTML, CSS, JavaScript
-- API layer: Node.js serverless functions (Vercel)
-- Analytics engine source: ASP.NET Core (C#)
+- Frontend: HTML, CSS, JavaScript (deployed on Vercel)
+- API routes: Node.js serverless functions
+- Core analytics engine: ASP.NET Core (C#)
 - ML service: FastAPI + scikit-learn (Python)
-- ML data store: PostgreSQL
+- Data layer for ML experiments: PostgreSQL
 
-## Security Notes
+## Security
 
-- No Clash Royale API token is committed.
-- Secrets are loaded from environment variables only.
-- CORS allowlist is enforced in backend config.
+- Clash Royale API token is **not** stored in this repo.
+- Secrets are injected via environment variables / secret stores.
+- CORS allowlist is enforced for backend endpoints.
