@@ -15,12 +15,12 @@ body {
   font-family: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at 50% -12%, rgba(216, 180, 255, 0.18), transparent 44%),
-    linear-gradient(180deg, #6025b0 0%, #3a1a81 34%, #1b2d68 70%, #0b193f 100%),
-    linear-gradient(45deg, rgba(255,255,255,.20) 2px, transparent 2px),
-    linear-gradient(-45deg, rgba(0,0,0,.32) 2px, transparent 2px);
-  background-size: auto, auto, 96px 96px, 96px 96px;
-  background-position: center, center, 0 0, 48px 48px;
+    radial-gradient(circle at 50% -12%, rgba(216, 180, 255, 0.22), transparent 44%),
+    linear-gradient(180deg, #6c2dc6 0%, #4b2099 34%, #252e79 70%, #0c1d4c 100%),
+    linear-gradient(45deg, rgba(255,255,255,.26) 2px, transparent 2px),
+    linear-gradient(-45deg, rgba(0,0,0,.36) 2px, transparent 2px);
+  background-size: auto, auto, 88px 88px, 88px 88px;
+  background-position: center, center, 0 0, 44px 44px;
   background-attachment: fixed;
 }
 
@@ -55,6 +55,17 @@ h1, h2 {
 .panel h2 {
   margin-top: 0;
   letter-spacing: .2px;
+}
+.analysis-block {
+  margin-top: 12px;
+}
+.section-label {
+  margin: 0 0 8px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #9cc4ff;
+  opacity: .95;
 }
 .dashboard-grid {
   display: grid;

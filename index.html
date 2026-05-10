@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="style.css?v=20260510a" />
+  <link rel="stylesheet" href="style.css?v=20260510b" />
 </head>
 <body>
   <main class="container">
@@ -187,33 +187,33 @@
           <ul id="towerImpactList"></ul>
         </section>
 
-        <details class="panel foldout">
-          <summary>Tower Optimizer</summary>
-          <h2>Tower Optimizer</h2>
+        <section class="panel analysis-block">
+          <h2 class="section-label">Tower Optimizer</h2>
+          
           <div id="towerOptimizerVisual" class="insight-cards"></div>
           <ul id="towerOptimizerList"></ul>
           <p id="towerOptimizerBest"></p>
-        </details>
+        </section>
 
-        <details class="panel foldout">
-          <summary>Suggested Changes</summary>
-          <h2>Suggested Changes</h2>
+        <section class="panel analysis-block">
+          <h2 class="section-label">Suggested Changes</h2>
+          
           <div id="deltaVisualStats" class="chip-row"></div>
           <p id="deltaSummary"></p>
           <div id="swapBoard" class="swap-board"></div>
           <ul id="deltaBreakdown"></ul>
-        </details>
+        </section>
 
-        <details class="panel foldout">
-          <summary>ML Forecast</summary>
-          <h2>ML Forecast</h2>
+        <section class="panel analysis-block">
+          <h2 class="section-label">ML Forecast</h2>
+          
           <div id="mlForecastVisual" class="ml-forecast-visual"></div>
           <p id="mlForecastLine"></p>
           <ul id="mlDriversList"></ul>
           <h3>ML Upgrade Suggestions</h3>
           <div id="mlSuggestionsVisual" class="swap-board"></div>
           <ul id="mlSuggestionsList"></ul>
-        </details>
+        </section>
 
         <section class="panel hidden" id="weaknessPanel">
           <h2>Weakness Profiler</h2>
@@ -230,17 +230,17 @@
           <ul id="weaknessProfileList"></ul>
         </section>
 
-        <details class="panel foldout">
-          <summary>Patch Drift</summary>
-          <h2>Patch Drift</h2>
+        <section class="panel analysis-block">
+          <h2 class="section-label">Patch Drift</h2>
+          
           <p id="patchDriftLine"></p>
           <div class="drift-meter"><i id="patchDriftMeter"></i></div>
           <div id="patchDriftVisual" class="insight-cards"></div>
           <ul id="patchDriftList"></ul>
-        </details>
+        </section>
 
-        <details class="panel foldout">
-          <summary>Strengths / Weaknesses / Recommendations</summary>
+        <section class="panel analysis-block">
+          <h2 class="section-label">Strengths / Weaknesses / Recommendations</h2>
           <div id="swrVisual" class="swr-visual-grid"></div>
           <h2>Strengths</h2>
           <ul id="strengthsList"></ul>
@@ -248,21 +248,22 @@
           <ul id="weaknessesList"></ul>
           <h2>Recommendations</h2>
           <ul id="recommendationsList"></ul>
-        </details>
+        </section>
 
-        <details class="panel foldout">
-          <summary>Breakdown Chart</summary>
+        <section class="panel analysis-block">
+          <h2 class="section-label">Breakdown Chart</h2>
           <h2>Breakdown</h2>
           <canvas id="synergyChart" height="140"></canvas>
-        </details>
+        </section>
       </div>
     </div>
   </main>
 
   <script src="config.js?v=20260502f"></script>
-  <script src="script.js?v=20260510d"></script>
+  <script src="script.js?v=20260510e"></script>
 </body>
 </html>
+
 
 
 
