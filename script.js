@@ -715,6 +715,8 @@ function renderAllAnalysis(data) {
     ? saneMlSuggestions.map((s) => `Slot ${s.slot}: ${s.outgoing} -> ${s.incoming} (Win Rate ${s.predictedWinRate}%, +${s.deltaWinRate}%)`)
     : ["No strong swap suggested. Deck already looks well-optimized in current model constraints."]
   );
+  renderMlSuggestionsVisual(saneMlSuggestions);
+  renderSwrVisual(data);
   renderChart(data.breakdown || {});
   renderRiskBars(data);
   renderBattleSnapshot(data);
@@ -796,9 +798,11 @@ async function optimizeTowerTroop() {
   const ranked = results.map((r) => {
     const score = Number(r.data?.score || 0);
     const ml = Number(r.data?.mlForecast?.predictedWinRate || 0);
-    const blended = Math.round((score * 0.62 + ml * 0.38) * 10) / 10;
+    const archetypeFit = Number(r.data?.archetypeConfidence || 0);
+    const blended = Math.round((score * 0.52 + ml * 0.33 + archetypeFit * 0.15) * 10) / 10;
     return { id: r.tower.id, label: r.tower.label, score, ml, blended };
   }).sort((a, b) => b.blended - a.blended);
+  renderTowerOptimizerVisual(ranked);
   renderList("towerOptimizerList", ranked.map((r, i) => `${i + 1}. ${r.label}: Blend ${r.blended} (Score ${r.score}, ML ${r.ml}%)`));
   const current = ranked.find((r) => r.id === state.selectedTowerTroop);
   const best = ranked[0];
@@ -822,10 +826,12 @@ async function runDeltaEngine() {
   const baseline = state.latestAnalysis || await analyzePayload({ cardIds: cards.map((c) => c.id), towerTroop: state.selectedTowerTroop });
   state.latestAnalysis = baseline;
   if (baseline.mlSuggestions && baseline.mlSuggestions.length > 0) {
-    const top = baseline.mlSuggestions.find((x) => Number(x.deltaWinRate) >= 1.0);
+    const validated = await validateMlSuggestions(cards, baseline);
+    const top = validated.find((x) => Number(x.deltaWinRate) >= 1.0);
     if (!top) {
       setText("deltaSummary", "No high-confidence one-card upgrade found. Current deck structure is already strong.");
       renderSwapBoard([]);
+      renderDeltaVisualStats([]);
       renderList("deltaBreakdown", [
         `Predicted Win Rate: ${baseline.mlForecast?.predictedWinRate ?? "-"}%`,
         `Model confidence: ${baseline.mlForecast?.confidence ?? "-"}%`,
@@ -835,11 +841,13 @@ async function runDeltaEngine() {
       return null;
     }
     setText("deltaSummary", `Best swap (ML): ${top.outgoing} -> ${top.incoming} (Slot ${top.slot}), +${top.deltaWinRate}% predicted win rate.`);
-    renderSwapBoard((baseline.mlSuggestions || []).filter((x) => Number(x.deltaWinRate) >= 1.0).slice(0, 3));
+    const bestThree = validated.filter((x) => Number(x.deltaWinRate) >= 1.0).slice(0, 3);
+    renderSwapBoard(bestThree);
+    renderDeltaVisualStats(bestThree);
     renderList("deltaBreakdown", [
       `Predicted Win Rate after swap: ${top.predictedWinRate}%`,
       `Model confidence: ${baseline.mlForecast?.confidence ?? "-"}%`,
-      `Based on current tower troop and deck structure.`
+      `Structure-safe swaps prioritized (archetype stability + role coverage).`
     ]);
     statusEl.textContent = "Suggested changes ready.";
     return top;
@@ -867,6 +875,7 @@ async function runDeltaEngine() {
   if (!best) {
     setText("deltaSummary", "No better one-card swap found in sampled candidates.");
     renderSwapBoard([]);
+    renderDeltaVisualStats([]);
     renderList("deltaBreakdown", []);
     return null;
   }
@@ -879,6 +888,13 @@ async function runDeltaEngine() {
       incoming: best.incoming.name,
       predictedWinRate: Number(best.analyzed.mlForecast?.predictedWinRate || baseline.mlForecast?.predictedWinRate || 0),
       deltaWinRate: Number(best.delta)
+    }
+  ]);
+  renderDeltaVisualStats([
+    {
+      predictedWinRate: Number(best.analyzed.mlForecast?.predictedWinRate || baseline.mlForecast?.predictedWinRate || 0),
+      deltaWinRate: Number(best.delta),
+      qualityScore: Number(best.delta)
     }
   ]);
   renderList("deltaBreakdown", [
@@ -942,6 +958,153 @@ function renderSwapBoard(suggestions) {
     card.appendChild(meter);
     root.appendChild(card);
   });
+}
+
+function renderTowerOptimizerVisual(ranked) {
+  const root = document.getElementById("towerOptimizerVisual");
+  if (!root) return;
+  root.innerHTML = "";
+  (ranked || []).slice(0, 4).forEach((r, i) => {
+    const card = document.createElement("article");
+    card.className = "insight-card";
+    card.innerHTML = `
+      <h4>${i === 0 ? "Best Tower" : `Option ${i + 1}`}</h4>
+      <p>${r.label}</p>
+      <div class="swap-meter"><i style="width:${Math.max(0, Math.min(100, r.blended))}%;"></i></div>
+      <div class="chip-row">
+        <span class="chip">Blend ${r.blended}</span>
+        <span class="chip">Score ${r.score}</span>
+        <span class="chip">ML ${r.ml}%</span>
+      </div>
+    `;
+    root.appendChild(card);
+  });
+}
+
+function renderDeltaVisualStats(suggestions) {
+  const root = document.getElementById("deltaVisualStats");
+  if (!root) return;
+  root.innerHTML = "";
+  if (!Array.isArray(suggestions) || suggestions.length === 0) return;
+  const top = suggestions[0];
+  const avgGain = suggestions.reduce((a, s) => a + Number(s.deltaWinRate || 0), 0) / suggestions.length;
+  const chips = [
+    `Top Gain +${Number(top.deltaWinRate || 0).toFixed(1)}%`,
+    `Pred WR ${Number(top.predictedWinRate || 0).toFixed(1)}%`,
+    `Avg Gain +${avgGain.toFixed(1)}%`
+  ];
+  chips.forEach((text) => {
+    const chip = document.createElement("span");
+    chip.className = "chip";
+    chip.textContent = text;
+    root.appendChild(chip);
+  });
+}
+
+function renderMlSuggestionsVisual(suggestions) {
+  const root = document.getElementById("mlSuggestionsVisual");
+  if (!root) return;
+  root.innerHTML = "";
+  if (!Array.isArray(suggestions) || suggestions.length === 0) return;
+  suggestions.forEach((s) => {
+    const delta = Number(s.deltaWinRate || 0);
+    const card = document.createElement("article");
+    card.className = "swap-card";
+    card.innerHTML = `
+      <div class="swap-head">
+        <span>Slot ${s.slot}: ${s.outgoing} -> ${s.incoming}</span>
+        <span class="swap-delta">${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%</span>
+      </div>
+      <div class="swap-meter"><i style="width:${Math.max(0, Math.min(100, (Math.abs(delta) / 10) * 100))}%;"></i></div>
+    `;
+    root.appendChild(card);
+  });
+}
+
+function renderPatchDriftVisual(drift, level) {
+  const root = document.getElementById("patchDriftVisual");
+  if (!root) return;
+  root.innerHTML = "";
+  const items = [
+    { title: "Current Risk", text: `${level} (${drift})` },
+    { title: "Primary Action", text: "Re-run Tower Optimizer after balance patches." },
+    { title: "Backup Plan", text: "Keep 2 tested swaps for bad matchups." }
+  ];
+  items.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "insight-card";
+    card.innerHTML = `<h4>${item.title}</h4><p>${item.text}</p>`;
+    root.appendChild(card);
+  });
+}
+
+function renderSwrVisual(data) {
+  const root = document.getElementById("swrVisual");
+  if (!root) return;
+  root.innerHTML = "";
+  const blocks = [
+    { title: "Strengths", items: data?.strengths || [], klass: "good" },
+    { title: "Weaknesses", items: data?.weaknesses || [], klass: "warn" },
+    { title: "Action Plan", items: data?.recommendations || [], klass: "plan" }
+  ];
+  blocks.forEach((b) => {
+    const card = document.createElement("article");
+    card.className = `swr-card ${b.klass}`;
+    const topThree = b.items.slice(0, 3);
+    card.innerHTML = `
+      <h4>${b.title}</h4>
+      <ul>${topThree.map((x) => `<li>${x}</li>`).join("") || "<li>No data yet.</li>"}</ul>
+    `;
+    root.appendChild(card);
+  });
+}
+
+async function validateMlSuggestions(cards, baseline) {
+  const suggestions = (baseline.mlSuggestions || []).filter((x) => Number(x.deltaWinRate) >= 0.5).slice(0, 8);
+  const validated = [];
+  for (const s of suggestions) {
+    const slot = Math.max(0, Number(s.slot) - 1);
+    const incomingCard = findCardByName(s.incoming);
+    if (!incomingCard || slot < 0 || slot > 7) continue;
+    const deck = cards.map((c) => c.id);
+    deck[slot] = incomingCard.id;
+    if (new Set(deck).size !== 8) continue;
+    try {
+      const analyzed = await analyzePayload({ cardIds: deck, towerTroop: state.selectedTowerTroop });
+      const qualityScore = computeSwapQuality(baseline, analyzed);
+      validated.push({
+        ...s,
+        predictedWinRate: Number(analyzed.mlForecast?.predictedWinRate || s.predictedWinRate || 0),
+        deltaWinRate: Number(analyzed.mlForecast?.predictedWinRate || 0) - Number(baseline.mlForecast?.predictedWinRate || 0),
+        qualityScore
+      });
+    } catch {
+      continue;
+    }
+  }
+  return validated.sort((a, b) => (b.qualityScore || 0) - (a.qualityScore || 0));
+}
+
+function computeSwapQuality(base, next) {
+  const baseSubs = base?.subScores || {};
+  const nextSubs = next?.subScores || {};
+  const gainOff = Number(nextSubs.Offense || 0) - Number(baseSubs.Offense || 0);
+  const gainDef = Number(nextSubs.Defense || 0) - Number(baseSubs.Defense || 0);
+  const gainSpell = Number(nextSubs.Spells || 0) - Number(baseSubs.Spells || 0);
+  const gainCycle = Number(nextSubs.Cycle || 0) - Number(baseSubs.Cycle || 0);
+  const gainCons = Number(nextSubs.Consistency || 0) - Number(baseSubs.Consistency || 0);
+  const baseWin = Number(base?.mlForecast?.predictedWinRate || 0);
+  const nextWin = Number(next?.mlForecast?.predictedWinRate || 0);
+  const winGain = nextWin - baseWin;
+  const archetypePenalty = base?.archetype !== next?.archetype ? 1.2 : 0;
+  const weighted = winGain * 2.6 + gainDef * 0.9 + gainCons * 0.8 + gainOff * 0.6 + gainSpell * 0.6 + gainCycle * 0.5;
+  return Number((weighted - archetypePenalty).toFixed(2));
+}
+
+function findCardByName(name) {
+  if (!name) return null;
+  const cleaned = String(name).trim().toLowerCase();
+  return state.cards.find((c) => c.name.toLowerCase() === cleaned) || null;
 }
 
 function renderRiskBars(data) {
@@ -1021,6 +1184,7 @@ function renderPatchDrift(data) {
   const level = drift >= 8 ? "High" : drift >= 4 ? "Medium" : "Low";
   setText("patchDriftLine", `Patch Drift Risk: ${level} (${drift}).`);
   setPatchDriftMeter(Math.max(0, Math.min(100, drift * 10)));
+  renderPatchDriftVisual(drift, level);
   renderList("patchDriftList", [
     "Re-run Tower Optimizer after each patch.",
     "Use Delta Engine for low-risk one-card tune-ups.",

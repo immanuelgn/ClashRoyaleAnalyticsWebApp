@@ -190,6 +190,7 @@
         <details class="panel foldout">
           <summary>Tower Optimizer</summary>
           <h2>Tower Optimizer</h2>
+          <div id="towerOptimizerVisual" class="insight-cards"></div>
           <ul id="towerOptimizerList"></ul>
           <p id="towerOptimizerBest"></p>
         </details>
@@ -197,6 +198,7 @@
         <details class="panel foldout">
           <summary>Suggested Changes</summary>
           <h2>Suggested Changes</h2>
+          <div id="deltaVisualStats" class="chip-row"></div>
           <p id="deltaSummary"></p>
           <div id="swapBoard" class="swap-board"></div>
           <ul id="deltaBreakdown"></ul>
@@ -209,6 +211,7 @@
           <p id="mlForecastLine"></p>
           <ul id="mlDriversList"></ul>
           <h3>ML Upgrade Suggestions</h3>
+          <div id="mlSuggestionsVisual" class="swap-board"></div>
           <ul id="mlSuggestionsList"></ul>
         </details>
 
@@ -232,11 +235,13 @@
           <h2>Patch Drift</h2>
           <p id="patchDriftLine"></p>
           <div class="drift-meter"><i id="patchDriftMeter"></i></div>
+          <div id="patchDriftVisual" class="insight-cards"></div>
           <ul id="patchDriftList"></ul>
         </details>
 
         <details class="panel foldout">
           <summary>Strengths / Weaknesses / Recommendations</summary>
+          <div id="swrVisual" class="swr-visual-grid"></div>
           <h2>Strengths</h2>
           <ul id="strengthsList"></ul>
           <h2>Weaknesses</h2>
@@ -255,7 +260,7 @@
   </main>
 
   <script src="config.js?v=20260502f"></script>
-  <script src="script.js?v=20260508c"></script>
+  <script src="script.js?v=20260510d"></script>
 </body>
 </html>
 
