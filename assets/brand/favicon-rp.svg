@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="RoyalePro RP icon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#0b173a"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#4c1d95"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fde68a"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.2" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bg)" stroke="#8b5cf6" stroke-width="2"/>
+  <path d="M2 10h60" stroke="#ffffff" stroke-opacity=".08" stroke-width="1"/>
+  <path d="M2 24h60" stroke="#ffffff" stroke-opacity=".05" stroke-width="1"/>
+  <path d="M2 38h60" stroke="#ffffff" stroke-opacity=".05" stroke-width="1"/>
+  <path d="M2 52h60" stroke="#ffffff" stroke-opacity=".08" stroke-width="1"/>
+
+  <rect x="10" y="11" width="44" height="42" rx="9" fill="url(#tile)" opacity=".18"/>
+
+  <g filter="url(#glow)">
+    <text x="13" y="44"
+      font-family="Bungee, Impact, 'Arial Black', sans-serif"
+      font-size="30"
+      font-weight="900"
+      letter-spacing="0.5"
+      fill="url(#gold)"
+      stroke="#7c2d12"
+      stroke-width="1.2">RP</text>
+  </g>
+
+  <g transform="translate(25 7)">
+    <path d="M2 10h10l-1-7-4 3-4-3z" fill="url(#gold)" stroke="#7c2d12" stroke-width=".8"/>
+    <circle cx="2" cy="3" r="1.4" fill="#fde68a"/>
+    <circle cx="12" cy="3" r="1.4" fill="#fde68a"/>
+    <circle cx="7" cy="1.5" r="1.4" fill="#fde68a"/>
+  </g>
+</svg>
