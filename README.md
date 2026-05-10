@@ -2,7 +2,7 @@
 
 Interactive deck analytics platform for Clash Royale with Evo/Hero/Champion-aware deck building, matchup scoring, and ML-assisted card swap suggestions.
 
-Live: https://clashroyaleanalyticswebapp.vercel.app
+Live: https://royalepro.vercel.app
 
 ## Highlights
 
