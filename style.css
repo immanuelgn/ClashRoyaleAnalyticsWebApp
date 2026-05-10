@@ -15,39 +15,20 @@ body {
   font-family: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at 12% -5%, rgba(22, 163, 255, 0.28), transparent 38%),
-    radial-gradient(circle at 85% 10%, rgba(168, 85, 247, 0.22), transparent 32%),
-    linear-gradient(180deg, #070f22, #050915 55%, #04070f);
-}
-body::before,
-body::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  width: 160px;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.18;
-  filter: saturate(1.15) drop-shadow(0 0 22px rgba(56,189,248,.28));
-}
-body::before {
-  left: 0;
-  background:
-    url("https://royaleapi.github.io/cr-api-assets/cards/archers-ev1.png") 50% 8%/120px auto no-repeat,
-    url("https://royaleapi.github.io/cr-api-assets/cards/knight-hero.png") 45% 42%/125px auto no-repeat,
-    url("https://royaleapi.github.io/cr-api-assets/cards/royal-hogs-ev1.png") 52% 76%/120px auto no-repeat;
-}
-body::after {
-  right: 0;
-  background:
-    url("https://royaleapi.github.io/cr-api-assets/cards/firecracker-ev1.png") 46% 12%/122px auto no-repeat,
-    url("https://royaleapi.github.io/cr-api-assets/cards/archer-queen.png") 55% 44%/122px auto no-repeat,
-    url("https://royaleapi.github.io/cr-api-assets/cards/royal-ghost-ev1.png") 48% 78%/116px auto no-repeat;
+    linear-gradient(180deg, #34116b 0%, #1b0e4a 30%, #0a1538 62%, #060f2b 100%),
+    linear-gradient(45deg, rgba(255,255,255,.055) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.055) 75%, rgba(255,255,255,.055)),
+    linear-gradient(-45deg, rgba(0,0,0,.11) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.11) 75%, rgba(0,0,0,.11));
+  background-size: auto, 88px 88px, 88px 88px;
+  background-position: center, 0 0, 44px 44px;
+  background-attachment: fixed;
 }
 
 .container { max-width: 1800px; width: min(1800px, 98vw); margin: 0 auto; padding: 24px; }
 h1 { margin-bottom: 8px; }
+h1, h2 {
+  font-family: "Bungee", "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
+  letter-spacing: 0.8px;
+}
 .sub { color: var(--muted); margin-top: 0; }
 
 .panel {
