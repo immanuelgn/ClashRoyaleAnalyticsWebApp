@@ -15,11 +15,24 @@ body {
   font-family: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
   color: var(--text);
   background:
-    linear-gradient(180deg, #34116b 0%, #1b0e4a 30%, #0a1538 62%, #060f2b 100%),
-    linear-gradient(45deg, rgba(255,255,255,.055) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.055) 75%, rgba(255,255,255,.055)),
-    linear-gradient(-45deg, rgba(0,0,0,.11) 25%, transparent 25%, transparent 75%, rgba(0,0,0,.11) 75%, rgba(0,0,0,.11));
-  background-size: auto, 88px 88px, 88px 88px;
-  background-position: center, 0 0, 44px 44px;
+    radial-gradient(circle at 50% -10%, rgba(168, 85, 247, 0.24), transparent 45%),
+    linear-gradient(180deg, #4f1d95 0%, #2e1065 32%, #1e1b4b 64%, #0b173a 100%),
+    repeating-linear-gradient(
+      45deg,
+      rgba(255,255,255,.055) 0px,
+      rgba(255,255,255,.055) 2px,
+      transparent 2px,
+      transparent 74px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(0,0,0,.23) 0px,
+      rgba(0,0,0,.23) 2px,
+      transparent 2px,
+      transparent 74px
+    );
+  background-size: auto, auto, 76px 76px, 76px 76px;
+  background-position: center, center, 0 0, 38px 38px;
   background-attachment: fixed;
 }
 
