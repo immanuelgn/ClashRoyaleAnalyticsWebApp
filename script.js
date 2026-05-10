@@ -5,6 +5,12 @@ const ASSET_VARIANT_BASE = "https://raw.githubusercontent.com/RoyaleAPI/cr-api-a
 const REV_KEY = "cr_deck_revisions_v1";
 const SELECT_GUARD_MS = 140;
 
+function fmtPct(value, digits = 1) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n)) return "0.0";
+  return n.toFixed(digits);
+}
+
 function normalizeBase(base) {
   return String(base || "").trim().replace(/\/+$/, "");
 }
@@ -704,7 +710,7 @@ function renderAllAnalysis(data) {
   renderQuickRead(data);
   renderMlForecastVisual(data);
   if (data.mlForecast) {
-    setText("mlForecastLine", `Predicted Win Rate: ${data.mlForecast.predictedWinRate}% (confidence ${data.mlForecast.confidence}%).`);
+    setText("mlForecastLine", `Predicted Win Rate: ${fmtPct(data.mlForecast.predictedWinRate)}% (confidence ${fmtPct(data.mlForecast.confidence, 0)}%).`);
     renderList("mlDriversList", data.mlForecast.topDrivers || []);
   } else {
     setText("mlForecastLine", "");
@@ -712,7 +718,7 @@ function renderAllAnalysis(data) {
   }
   const saneMlSuggestions = (data.mlSuggestions || []).filter((s) => Number(s.deltaWinRate) >= 1.0).slice(0, 3);
   renderList("mlSuggestionsList", saneMlSuggestions.length
-    ? saneMlSuggestions.map((s) => `Slot ${s.slot}: ${s.outgoing} -> ${s.incoming} (Win Rate ${s.predictedWinRate}%, +${s.deltaWinRate}%)`)
+    ? saneMlSuggestions.map((s) => `Slot ${s.slot}: ${s.outgoing} -> ${s.incoming} (Win Rate ${fmtPct(s.predictedWinRate)}%, +${fmtPct(s.deltaWinRate)}%)`)
     : ["No strong swap suggested. Deck already looks well-optimized in current model constraints."]
   );
   renderMlSuggestionsVisual(saneMlSuggestions);
@@ -833,20 +839,20 @@ async function runDeltaEngine() {
       renderSwapBoard([]);
       renderDeltaVisualStats([]);
       renderList("deltaBreakdown", [
-        `Predicted Win Rate: ${baseline.mlForecast?.predictedWinRate ?? "-"}%`,
-        `Model confidence: ${baseline.mlForecast?.confidence ?? "-"}%`,
+        `Predicted Win Rate: ${fmtPct(baseline.mlForecast?.predictedWinRate)}%`,
+        `Model confidence: ${fmtPct(baseline.mlForecast?.confidence, 0)}%`,
         "Try matchup simulator for matchup-specific improvements instead of structural swaps."
       ]);
       statusEl.textContent = "Suggested changes ready.";
       return null;
     }
-    setText("deltaSummary", `Best swap (ML): ${top.outgoing} -> ${top.incoming} (Slot ${top.slot}), +${top.deltaWinRate}% predicted win rate.`);
+    setText("deltaSummary", `Best swap (ML): ${top.outgoing} -> ${top.incoming} (Slot ${top.slot}), +${fmtPct(top.deltaWinRate)}% predicted win rate.`);
     const bestThree = validated.filter((x) => Number(x.deltaWinRate) >= 1.0).slice(0, 3);
     renderSwapBoard(bestThree);
     renderDeltaVisualStats(bestThree);
     renderList("deltaBreakdown", [
-      `Predicted Win Rate after swap: ${top.predictedWinRate}%`,
-      `Model confidence: ${baseline.mlForecast?.confidence ?? "-"}%`,
+      `Predicted Win Rate after swap: ${fmtPct(top.predictedWinRate)}%`,
+      `Model confidence: ${fmtPct(baseline.mlForecast?.confidence, 0)}%`,
       `Structure-safe swaps prioritized (archetype stability + role coverage).`
     ]);
     statusEl.textContent = "Suggested changes ready.";
@@ -880,7 +886,7 @@ async function runDeltaEngine() {
     return null;
   }
 
-  setText("deltaSummary", `Best swap: ${best.outgoing.name} -> ${best.incoming.name} (Slot ${best.slot + 1}). ${baseline.score} -> ${best.analyzed.score} (${best.delta >= 0 ? "+" : ""}${best.delta}).`);
+  setText("deltaSummary", `Best swap: ${best.outgoing.name} -> ${best.incoming.name} (Slot ${best.slot + 1}). ${baseline.score} -> ${best.analyzed.score} (${best.delta >= 0 ? "+" : ""}${fmtPct(best.delta)}).`);
   renderSwapBoard([
     {
       slot: best.slot + 1,
@@ -1097,8 +1103,11 @@ function computeSwapQuality(base, next) {
   const nextWin = Number(next?.mlForecast?.predictedWinRate || 0);
   const winGain = nextWin - baseWin;
   const archetypePenalty = base?.archetype !== next?.archetype ? 1.2 : 0;
+  const baseWinCons = (base?.winConditions || []).length;
+  const nextWinCons = (next?.winConditions || []).length;
+  const winConPenalty = nextWinCons < baseWinCons ? (baseWinCons - nextWinCons) * 1.4 : 0;
   const weighted = winGain * 2.6 + gainDef * 0.9 + gainCons * 0.8 + gainOff * 0.6 + gainSpell * 0.6 + gainCycle * 0.5;
-  return Number((weighted - archetypePenalty).toFixed(2));
+  return Number((weighted - archetypePenalty - winConPenalty).toFixed(2));
 }
 
 function findCardByName(name) {

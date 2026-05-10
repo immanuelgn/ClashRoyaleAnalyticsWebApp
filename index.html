@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="style.css?v=20260510b" />
+  <link rel="stylesheet" href="style.css?v=20260510c" />
 </head>
 <body>
   <main class="container">
@@ -187,80 +187,78 @@
           <ul id="towerImpactList"></ul>
         </section>
 
-        <section class="panel analysis-block">
-          <h2 class="section-label">Tower Optimizer</h2>
-          
-          <div id="towerOptimizerVisual" class="insight-cards"></div>
-          <ul id="towerOptimizerList"></ul>
-          <p id="towerOptimizerBest"></p>
-        </section>
+        <div class="analysis-mosaic">
+          <section class="panel analysis-block">
+            <h2 class="section-label">Tower Optimizer</h2>
+            <div id="towerOptimizerVisual" class="insight-cards"></div>
+            <ul id="towerOptimizerList"></ul>
+            <p id="towerOptimizerBest"></p>
+          </section>
 
-        <section class="panel analysis-block">
-          <h2 class="section-label">Suggested Changes</h2>
-          
-          <div id="deltaVisualStats" class="chip-row"></div>
-          <p id="deltaSummary"></p>
-          <div id="swapBoard" class="swap-board"></div>
-          <ul id="deltaBreakdown"></ul>
-        </section>
+          <section class="panel analysis-block">
+            <h2 class="section-label">Suggested Changes</h2>
+            <div id="deltaVisualStats" class="chip-row"></div>
+            <p id="deltaSummary"></p>
+            <div id="swapBoard" class="swap-board"></div>
+            <ul id="deltaBreakdown"></ul>
+          </section>
 
-        <section class="panel analysis-block">
-          <h2 class="section-label">ML Forecast</h2>
-          
-          <div id="mlForecastVisual" class="ml-forecast-visual"></div>
-          <p id="mlForecastLine"></p>
-          <ul id="mlDriversList"></ul>
-          <h3>ML Upgrade Suggestions</h3>
-          <div id="mlSuggestionsVisual" class="swap-board"></div>
-          <ul id="mlSuggestionsList"></ul>
-        </section>
+          <section class="panel analysis-block">
+            <h2 class="section-label">ML Forecast</h2>
+            <div id="mlForecastVisual" class="ml-forecast-visual"></div>
+            <p id="mlForecastLine"></p>
+            <ul id="mlDriversList"></ul>
+            <h3>ML Upgrade Suggestions</h3>
+            <div id="mlSuggestionsVisual" class="swap-board"></div>
+            <ul id="mlSuggestionsList"></ul>
+          </section>
 
-        <section class="panel hidden" id="weaknessPanel">
-          <h2>Weakness Profiler</h2>
-          <div class="risk-grid" id="riskGrid">
-            <div class="risk-card"><span>Air Risk</span><div class="risk-bar"><i id="riskAir"></i></div><b id="riskAirLabel">-</b></div>
-            <div class="risk-card"><span>Swarm Risk</span><div class="risk-bar"><i id="riskSwarm"></i></div><b id="riskSwarmLabel">-</b></div>
-            <div class="risk-card"><span>Beatdown Risk</span><div class="risk-bar"><i id="riskBeatdown"></i></div><b id="riskBeatdownLabel">-</b></div>
-          </div>
-          <div class="weakness-actions">
-            <button class="weakness-btn" data-profile="anti_air">Struggle vs Air</button>
-            <button class="weakness-btn" data-profile="anti_swarm">Struggle vs Swarm</button>
-            <button class="weakness-btn" data-profile="anti_beatdown">Struggle vs Beatdown</button>
-          </div>
-          <ul id="weaknessProfileList"></ul>
-        </section>
+          <section class="panel hidden analysis-block" id="weaknessPanel">
+            <h2 class="section-label">Weakness Profiler</h2>
+            <div class="risk-grid" id="riskGrid">
+              <div class="risk-card"><span>Air Risk</span><div class="risk-bar"><i id="riskAir"></i></div><b id="riskAirLabel">-</b></div>
+              <div class="risk-card"><span>Swarm Risk</span><div class="risk-bar"><i id="riskSwarm"></i></div><b id="riskSwarmLabel">-</b></div>
+              <div class="risk-card"><span>Beatdown Risk</span><div class="risk-bar"><i id="riskBeatdown"></i></div><b id="riskBeatdownLabel">-</b></div>
+            </div>
+            <div class="weakness-actions">
+              <button class="weakness-btn" data-profile="anti_air">Struggle vs Air</button>
+              <button class="weakness-btn" data-profile="anti_swarm">Struggle vs Swarm</button>
+              <button class="weakness-btn" data-profile="anti_beatdown">Struggle vs Beatdown</button>
+            </div>
+            <ul id="weaknessProfileList"></ul>
+          </section>
 
-        <section class="panel analysis-block">
-          <h2 class="section-label">Patch Drift</h2>
-          
-          <p id="patchDriftLine"></p>
-          <div class="drift-meter"><i id="patchDriftMeter"></i></div>
-          <div id="patchDriftVisual" class="insight-cards"></div>
-          <ul id="patchDriftList"></ul>
-        </section>
+          <section class="panel analysis-block">
+            <h2 class="section-label">Patch Drift</h2>
+            <p id="patchDriftLine"></p>
+            <div class="drift-meter"><i id="patchDriftMeter"></i></div>
+            <div id="patchDriftVisual" class="insight-cards"></div>
+            <ul id="patchDriftList"></ul>
+          </section>
 
-        <section class="panel analysis-block">
-          <h2 class="section-label">Strengths / Weaknesses / Recommendations</h2>
-          <div id="swrVisual" class="swr-visual-grid"></div>
-          <h2>Strengths</h2>
-          <ul id="strengthsList"></ul>
-          <h2>Weaknesses</h2>
-          <ul id="weaknessesList"></ul>
-          <h2>Recommendations</h2>
-          <ul id="recommendationsList"></ul>
-        </section>
+          <section class="panel analysis-block analysis-wide">
+            <h2 class="section-label">Strengths / Weaknesses / Recommendations</h2>
+            <div id="swrVisual" class="swr-visual-grid"></div>
+            <h2>Strengths</h2>
+            <ul id="strengthsList"></ul>
+            <h2>Weaknesses</h2>
+            <ul id="weaknessesList"></ul>
+            <h2>Recommendations</h2>
+            <ul id="recommendationsList"></ul>
+          </section>
 
-        <section class="panel analysis-block">
-          <h2 class="section-label">Breakdown Chart</h2>
-          <h2>Breakdown</h2>
-          <canvas id="synergyChart" height="140"></canvas>
-        </section>
+          <section class="panel analysis-block analysis-wide">
+            <h2 class="section-label">Breakdown Chart</h2>
+            <h2>Breakdown</h2>
+            <canvas id="synergyChart" height="140"></canvas>
+          </section>
+        </div>
       </div>
     </div>
   </main>
 
   <script src="config.js?v=20260502f"></script>
-  <script src="script.js?v=20260510e"></script>
+  <script src="script.js?v=20260510f"></script>
 </body>
 </html>
 

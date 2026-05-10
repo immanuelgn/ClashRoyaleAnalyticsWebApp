@@ -35,6 +35,20 @@ body::before {
   mix-blend-mode: screen;
   z-index: 0;
 }
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,.06) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(-45deg, rgba(0,0,0,.16) 0 1px, transparent 1px 48px);
+  background-size: 96px 96px, 96px 96px;
+  background-position: 0 0, 48px 48px;
+  mix-blend-mode: soft-light;
+  opacity: 0.7;
+  z-index: 0;
+}
 
 .container { max-width: 1800px; width: min(1800px, 98vw); margin: 0 auto; padding: 24px; }
 h1 { margin-bottom: 8px; }
@@ -58,6 +72,15 @@ h1, h2 {
 }
 .analysis-block {
   margin-top: 12px;
+}
+.analysis-mosaic {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.analysis-wide {
+  grid-column: 1 / -1;
 }
 .section-label {
   margin: 0 0 8px;
@@ -739,6 +762,7 @@ ul { padding-left: 20px; }
 .swr-card li {
   font-size: 12px;
   color: #dbeafe;
+  line-height: 1.35;
 }
 .swr-card.good { border-color: rgba(34,197,94,.55); }
 .swr-card.warn { border-color: rgba(245,158,11,.55); }
@@ -766,6 +790,7 @@ ul { padding-left: 20px; }
   .insight-cards { grid-template-columns: 1fr; }
   .ml-forecast-visual { grid-template-columns: 1fr; }
   .swr-visual-grid { grid-template-columns: 1fr; }
+  .analysis-mosaic { grid-template-columns: 1fr; }
 }
 .card-chip.slot-evo .card-img { filter: saturate(1.25) contrast(1.05) drop-shadow(0 0 10px rgba(168,85,247,.45)); }
 .card-chip.slot-hero .card-img { filter: saturate(1.22) contrast(1.08) drop-shadow(0 0 10px rgba(245,158,11,.45)); }
