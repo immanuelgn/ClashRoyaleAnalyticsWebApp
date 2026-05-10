@@ -15,13 +15,25 @@ body {
   font-family: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
   color: var(--text);
   background:
-    radial-gradient(circle at 50% -12%, rgba(216, 180, 255, 0.22), transparent 44%),
-    linear-gradient(180deg, #5f24ae 0%, #3d1a86 32%, #1b2d68 68%, #0b193f 100%),
-    linear-gradient(45deg, rgba(255,255,255,.10) 1px, transparent 1px),
-    linear-gradient(-45deg, rgba(0,0,0,.24) 1px, transparent 1px);
-  background-size: auto, auto, 84px 84px, 84px 84px;
-  background-position: center, center, 0 0, 42px 42px;
+    radial-gradient(circle at 50% -12%, rgba(216, 180, 255, 0.18), transparent 44%),
+    linear-gradient(180deg, #6025b0 0%, #3a1a81 34%, #1b2d68 70%, #0b193f 100%),
+    linear-gradient(45deg, rgba(255,255,255,.20) 2px, transparent 2px),
+    linear-gradient(-45deg, rgba(0,0,0,.32) 2px, transparent 2px);
+  background-size: auto, auto, 96px 96px, 96px 96px;
+  background-position: center, center, 0 0, 48px 48px;
   background-attachment: fixed;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.08), transparent 25%),
+    radial-gradient(circle at 50% 0%, rgba(255,255,255,.08), transparent 40%);
+  mix-blend-mode: screen;
+  z-index: 0;
 }
 
 .container { max-width: 1800px; width: min(1800px, 98vw); margin: 0 auto; padding: 24px; }
