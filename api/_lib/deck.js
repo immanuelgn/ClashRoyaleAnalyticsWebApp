@@ -100,6 +100,52 @@ function buildMatchups(archetype) {
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
+function hasDeckSignature(cards, names) {
+  const set = new Set(cards.map((c) => String(c.name || "").toLowerCase()));
+  return names.every((n) => set.has(n));
+}
+
+function applyMetaCalibration(cards, archetype, totalScore, strengths, recommendations) {
+  const signatures = [
+    {
+      id: "hog-26",
+      names: ["hog rider", "musketeer", "cannon", "ice golem", "skeletons", "ice spirit", "fireball", "the log"],
+      minScore: 101,
+      bonus: 5,
+      strength: "Recognized meta cycle shell (Hog 2.6): elite defense-to-pressure conversion when piloted well.",
+      rec: "Focus on micro-cycle timing and cannon placements; avoid overcommitting before 2x elixir."
+    },
+    {
+      id: "hog-eq-cycle",
+      names: ["hog rider", "earthquake", "the log", "firecracker"],
+      minScore: 94,
+      bonus: 3,
+      strength: "Meta Hog EQ pattern detected: strong building pressure and consistent chip path.",
+      rec: "Preserve spell cycle discipline and protect Firecracker lane geometry."
+    },
+    {
+      id: "lava-loon",
+      names: ["lava hound", "balloon"],
+      minScore: 92,
+      bonus: 3,
+      strength: "Meta air beatdown core detected: high punish ceiling versus weak anti-air decks.",
+      rec: "Bank elixir for full pushes and track opponent anti-air rotation before committing."
+    }
+  ];
+
+  let calibrated = totalScore;
+  signatures.forEach((sig) => {
+    if (hasDeckSignature(cards, sig.names)) {
+      calibrated = Math.max(calibrated, sig.minScore) + sig.bonus;
+      strengths.unshift(sig.strength);
+      recommendations.unshift(sig.rec);
+    }
+  });
+
+  if (archetype === "Cycle" && calibrated < 90) calibrated += 2;
+  return calibrated;
+}
+
 function buildMlFeatures(cards, metadata, avgElixir, towerTroop) {
   const spellCount = cards.filter(c => c.role === "Spell").length;
   const lightSpellCount = metadata.filter(m => m.isLightSpell).length;
@@ -333,6 +379,7 @@ function analyzeDeck(cardIds, towerTroop) {
   if (totalScore < 0) totalScore = 0;
 
   const { archetype, confidence } = detectArchetype(cards, metadata, avgElixir, winConditions);
+  totalScore = applyMetaCalibration(cards, archetype, totalScore, strengths, recommendations);
   const mlFeatures = buildMlFeatures(cards, metadata, avgElixir, tt);
   const mlForecast = buildMlForecast(mlFeatures, totalScore, confidence);
   let mlSuggestions = suggestMlUpgrades(cards, tt, mlForecast.predictedWinRate);

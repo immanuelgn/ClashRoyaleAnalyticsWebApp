@@ -336,7 +336,9 @@ function buildCardChip(card, options) {
   const image = getDisplayImage(card, slotType);
   const fallbackChain = getDisplayImageFallbacks(card, slotType, slotIndex);
   const fallbackData = escapeHtml(fallbackChain.join("|"));
-  const canToggleWildMode = slotRuleType === "wild" && showRemove && isEvolutionCard(card) && isHeroOrChampion(card);
+  const hasEvoMode = isEvolutionCard(card);
+  const hasHeroMode = isHeroOrChampion(card);
+  const canToggleWildMode = slotRuleType === "wild" && showRemove && (hasEvoMode || hasHeroMode);
   const currentWildMode = canToggleWildMode ? getWildModeForCard(slotIndex, card) : "";
   chip.innerHTML = `
     ${isPoolCard ? "" : `<span class="variant-pill">${slotLabel}</span>`}
@@ -347,7 +349,7 @@ function buildCardChip(card, options) {
     <div class="name">${card.name}${isPoolCard ? getPoolSpecialSuffix(card) : ""}</div>
     <div class="meta">${card.elixirCost} Elixir</div>
     ${slotType ? `<div class="mode-line ${slotType}">${getModeLabel(slotType, slotRuleType, card)}</div>` : ""}
-    ${canToggleWildMode ? `<div class="mode-switch"><button type="button" class="mode-opt ${currentWildMode === "evo" ? "active" : ""}" data-mode="evo">EVO</button><button type="button" class="mode-opt ${currentWildMode === "hero" ? "active" : ""}" data-mode="hero">HERO</button></div>` : ""}
+    ${canToggleWildMode ? `<div class="mode-switch"><button type="button" class="mode-opt ${currentWildMode === "evo" ? "active" : ""}" data-mode="evo" ${hasEvoMode ? "" : "disabled"}>EVO</button><button type="button" class="mode-opt ${currentWildMode === "hero" ? "active" : ""}" data-mode="hero" ${hasHeroMode ? "" : "disabled"}>HERO</button></div>` : ""}
   `;
 
   if (showRemove && onRemove) {
@@ -361,6 +363,7 @@ function buildCardChip(card, options) {
         e.stopPropagation();
         const nextMode = btn.dataset.mode;
         if (nextMode !== "evo" && nextMode !== "hero") return;
+        if ((nextMode === "evo" && !hasEvoMode) || (nextMode === "hero" && !hasHeroMode)) return;
         state.wildSlotModes[slotIndex] = nextMode;
         const check = validateDeckComposition(state.deck);
         if (!check.ok) {
@@ -700,9 +703,11 @@ function renderAllAnalysis(data) {
   setText("score", `${data.score}`);
   setText("avgElixir", `${Number(data.averageElixir).toFixed(1)}`);
   setText("winCons", `Win Conditions: ${(data.winConditions || []).join(" | ") || "None detected"}`);
-  renderList("subScoresList", objectToList(data.subScores));
+  const fallbackSubScores = buildSubScoresFallback(data);
+  const subs = data.subScores && Object.keys(data.subScores).length ? data.subScores : fallbackSubScores;
+  renderList("subScoresList", objectToList(subs));
   renderList("towerImpactList", objectToList(data.towerImpact));
-  renderMetricTiles("subscoreTiles", buildVisualMetrics(data.subScores, { Offense: 35, Defense: 25, Spells: 25, Cycle: 20, Consistency: 25 }));
+  renderMetricTiles("subscoreTiles", buildVisualMetrics(subs, { Offense: 35, Defense: 25, Spells: 25, Cycle: 20, Consistency: 25 }));
   renderMetricTiles("towerImpactTiles", buildVisualMetrics(data.towerImpact, {}, 10));
   renderList("strengthsList", data.strengths || []);
   renderList("weaknessesList", data.weaknesses || []);
@@ -1145,11 +1150,34 @@ function buildVisualMetrics(obj, maxMap = {}, defaultMax = 35) {
   });
 }
 
+function buildSubScoresFallback(data) {
+  const b = data?.breakdown || {};
+  return {
+    Offense: Number(b["Win Condition Clarity"] || 0) + Number(b["Support Package"] || 0),
+    Defense: Number(b["Air Defense"] || 0) + Number(b["Building Coverage"] || 0) + Number(b["Swarm Control"] || 0),
+    Spells: Number(b["Spell Count"] || 0) + Number(b["Spell Balance"] || 0) + Number(b["Reset Access"] || 0),
+    Cycle: Number(b["Cycle Speed"] || 0) + Number(b["Cheap Cycle Support"] || 0),
+    Consistency: Number(b["Elixir Balance"] || 0) + Number(b["Frontline Presence"] || 0) + Number(b["Card Uniqueness"] || 0)
+  };
+}
+
 function renderMetricTiles(targetId, metrics) {
   const root = document.getElementById(targetId);
   if (!root) return;
   root.innerHTML = "";
-  if (!Array.isArray(metrics) || metrics.length === 0) return;
+  if (!Array.isArray(metrics) || metrics.length === 0) {
+    ["Pending 1", "Pending 2", "Pending 3"].forEach((name) => {
+      const item = document.createElement("article");
+      item.className = "metric-tile-visual";
+      item.innerHTML = `
+        <div class="name">${name}</div>
+        <div class="value">-</div>
+        <div class="mini-bar"><i style="width:0%;"></i></div>
+      `;
+      root.appendChild(item);
+    });
+    return;
+  }
   metrics.forEach((m) => {
     const item = document.createElement("article");
     item.className = "metric-tile-visual";
