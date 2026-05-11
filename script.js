@@ -752,7 +752,7 @@ function renderQuickRead(data) {
     if (dialVal) dialVal.textContent = "-";
     if (verdict) verdict.textContent = "Build your deck and click Analyze to get a quick visual verdict.";
     if (mlWinChip) mlWinChip.textContent = "Win Rate: -";
-    if (mlConfChip) mlConfChip.textContent = "ML Confidence: -";
+    if (mlConfChip) mlConfChip.textContent = "Prediction Confidence: -";
     if (towerChip) towerChip.textContent = "Tower Fit: -";
     ["barOffense", "barDefense", "barSpells", "barCycle", "barConsistency"].forEach((id) => {
       const el = document.getElementById(id);
@@ -787,7 +787,7 @@ function renderQuickRead(data) {
   const conf = Number(data.mlForecast?.confidence || 0);
   const towerImpactTotal = Object.values(data.towerImpact || {}).reduce((sum, v) => sum + Number(v || 0), 0);
   if (mlWinChip) mlWinChip.textContent = `Win Rate: ${winRate > 0 ? `${winRate}%` : "-"}`;
-  if (mlConfChip) mlConfChip.textContent = `ML Confidence: ${conf > 0 ? `${conf}%` : "-"}`;
+  if (mlConfChip) mlConfChip.textContent = `Prediction Confidence: ${conf > 0 ? `${conf}%` : "-"}`;
   if (towerChip) towerChip.textContent = `Tower Fit: ${towerImpactTotal >= 8 ? "Strong" : towerImpactTotal >= 3 ? "Neutral" : "Weak"}`;
 
   let tone = "Balanced";
@@ -815,7 +815,7 @@ async function optimizeTowerTroop() {
     return { id: r.tower.id, label: r.tower.label, score, ml, blended };
   }).sort((a, b) => b.blended - a.blended);
   renderTowerOptimizerVisual(ranked);
-  renderList("towerOptimizerList", ranked.map((r, i) => `${i + 1}. ${r.label}: Blend ${r.blended} (Score ${r.score}, ML ${r.ml}%)`));
+  renderList("towerOptimizerList", ranked.map((r, i) => `${i + 1}. ${r.label}: Composite ${r.blended} (Score ${r.score}, Forecast ${r.ml}%)`));
   const current = ranked.find((r) => r.id === state.selectedTowerTroop);
   const best = ranked[0];
   const keepCurrent = current && ((best.blended - current.blended) <= 1.5);
@@ -846,19 +846,19 @@ async function runDeltaEngine() {
       renderDeltaVisualStats([]);
       renderList("deltaBreakdown", [
         `Predicted Win Rate: ${fmtPct(baseline.mlForecast?.predictedWinRate)}%`,
-        `Model confidence: ${fmtPct(baseline.mlForecast?.confidence, 0)}%`,
+        `Prediction confidence: ${fmtPct(baseline.mlForecast?.confidence, 0)}%`,
         "Try matchup simulator for matchup-specific improvements instead of structural swaps."
       ]);
       statusEl.textContent = "Suggested changes ready.";
       return null;
     }
-    setText("deltaSummary", `Best swap (ML): ${top.outgoing} -> ${top.incoming} (Slot ${top.slot}), +${fmtPct(top.deltaWinRate)}% predicted win rate.`);
+    setText("deltaSummary", `Best smart swap: ${top.outgoing} -> ${top.incoming} (Slot ${top.slot}), +${fmtPct(top.deltaWinRate)}% predicted win rate.`);
     const bestThree = validated.filter((x) => Number(x.deltaWinRate) >= 1.0).slice(0, 3);
     renderSwapBoard(bestThree);
     renderDeltaVisualStats(bestThree);
     renderList("deltaBreakdown", [
       `Predicted Win Rate after swap: ${fmtPct(top.predictedWinRate)}%`,
-      `Model confidence: ${fmtPct(baseline.mlForecast?.confidence, 0)}%`,
+      `Prediction confidence: ${fmtPct(baseline.mlForecast?.confidence, 0)}%`,
       `Structure-safe swaps prioritized (archetype stability + role coverage).`
     ]);
     statusEl.textContent = "Suggested changes ready.";
@@ -986,7 +986,7 @@ function renderTowerOptimizerVisual(ranked) {
       <div class="chip-row">
         <span class="chip">Blend ${r.blended}</span>
         <span class="chip">Score ${r.score}</span>
-        <span class="chip">ML ${r.ml}%</span>
+        <span class="chip">Forecast ${r.ml}%</span>
       </div>
     `;
     root.appendChild(card);
@@ -1002,7 +1002,7 @@ function renderDeltaVisualStats(suggestions) {
   const avgGain = suggestions.reduce((a, s) => a + Number(s.deltaWinRate || 0), 0) / suggestions.length;
   const chips = [
     `Top Gain +${Number(top.deltaWinRate || 0).toFixed(1)}%`,
-    `Pred WR ${Number(top.predictedWinRate || 0).toFixed(1)}%`,
+    `Pred Win ${Number(top.predictedWinRate || 0).toFixed(1)}%`,
     `Avg Gain +${avgGain.toFixed(1)}%`
   ];
   chips.forEach((text) => {
@@ -1201,7 +1201,7 @@ function renderMlForecastVisual(data) {
   const sugg = (data.mlSuggestions || []).filter((s) => Number(s.deltaWinRate) > 0).length;
   const cards = [
     { label: "Predicted Win Rate", main: `${wr}%` },
-    { label: "Model Confidence", main: `${conf}%` },
+    { label: "Prediction Confidence", main: `${conf}%` },
     { label: "Viable Swap Options", main: `${sugg}` }
   ];
   cards.forEach((c) => {

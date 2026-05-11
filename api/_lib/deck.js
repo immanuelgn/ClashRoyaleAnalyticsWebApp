@@ -125,6 +125,14 @@ function applyMetaCalibration(cards, archetype, totalScore, strengths, recommend
       rec: "Preserve spell cycle discipline and protect Firecracker lane geometry."
     },
     {
+      id: "rhogs-aq-cycle",
+      names: ["royal hogs", "archer queen", "earthquake", "royal delivery", "the log", "cannon", "ice spirit", "skeletons"],
+      minScore: 104,
+      bonus: 4,
+      strength: "Recognized RHogs AQ 2.9 shell: top ladder control-cycle profile with high defensive efficiency.",
+      rec: "Keep cycle discipline around AQ + Cannon and avoid unnecessary structural swaps."
+    },
+    {
       id: "lava-loon",
       names: ["lava hound", "balloon"],
       minScore: 92,
@@ -145,6 +153,14 @@ function applyMetaCalibration(cards, archetype, totalScore, strengths, recommend
 
   if (archetype === "Cycle" && calibrated < 90) calibrated += 2;
   return calibrated;
+}
+
+function isProtectedMetaShell(cards) {
+  const shells = [
+    ["hog rider", "musketeer", "cannon", "ice golem", "skeletons", "ice spirit", "fireball", "the log"],
+    ["royal hogs", "archer queen", "earthquake", "royal delivery", "the log", "cannon", "ice spirit", "skeletons"]
+  ];
+  return shells.some((shell) => hasDeckSignature(cards, shell));
 }
 
 function buildMlFeatures(cards, metadata, avgElixir, towerTroop) {
@@ -213,6 +229,8 @@ function buildMlForecast(features, score, archetypeConfidence) {
 }
 
 function suggestMlUpgrades(cards, towerTroop, baselineWinRate) {
+  if (isProtectedMetaShell(cards)) return [];
+
   const map = new Map(CARDS.map(c => [c.id, c]));
   const deckIds = cards.map(c => c.id);
   const deckSet = new Set(deckIds);
@@ -250,7 +268,8 @@ function suggestMlUpgrades(cards, towerTroop, baselineWinRate) {
       const nextWinConCount = m.filter(x => x.isWinCondition).length;
       if (Math.abs(nextWinConCount - baseWinConCount) > 1) continue;
       const f = buildMlFeatures(nextCards, m, nextCards.reduce((s, c) => s + (c.elixirCost || 0), 0) / 8, towerTroop);
-      if (Math.abs(f.avgElixir - baseAvg) > 0.55) continue;
+      if (Math.abs(f.avgElixir - baseAvg) > 0.45) continue;
+      if (baseAvg <= 3.1 && f.avgElixir > 3.3) continue;
       const wr = predictWinRate(f);
       const delta = Math.round((wr - baselineWinRate) * 10) / 10;
       if (delta < 1.0) continue;
