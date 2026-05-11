@@ -11,6 +11,7 @@ const EVO_CARD_SLUGS = new Set([
   "firecracker", "furnace", "giant-snowball", "goblin-barrel", "goblin-cage",
   "goblin-drill", "goblin-giant", "hunter", "ice-spirit",
   "inferno-dragon", "knight", "lumberjack", "mega-knight",
+  "musketeer",
   "mortar", "pekka", "royal-ghost", "royal-giant",
   "royal-hogs", "royal-recruits", "skeleton-army", "skeleton-barrel", "skeletons",
   "tesla", "valkyrie", "wall-breakers", "witch", "wizard", "zap"
