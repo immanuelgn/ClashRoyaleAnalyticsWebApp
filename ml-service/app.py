@@ -9,7 +9,14 @@ import numpy as np
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from db import add_battle_feedback, init_db, log_analysis_event
+from db import (
+    add_battle_feedback,
+    get_learning_stats,
+    get_online_calibration,
+    init_db,
+    log_analysis_event,
+    update_online_calibration,
+)
 from feature_engineering import (
     build_feature_vector_from_ids,
     load_cards,
@@ -32,6 +39,7 @@ META = {"modelVersion": "untrained"}
 class PredictRequest(BaseModel):
     cardIds: List[int]
     towerTroop: str = "tower_princess"
+    scoreProxy: float | None = None
 
 class FeedbackRequest(BaseModel):
     cardIds: List[int]
@@ -62,7 +70,8 @@ def predict_win_rate(card_ids: List[int], tower_troop: str):
         pred = _fallback_predict(feats)
     else:
         pred = float(MODEL.predict(np.array([vec], dtype=np.float32))[0])
-    pred = float(max(35.0, min(80.0, pred)))
+    calib = get_online_calibration()
+    pred = float(max(35.0, min(80.0, pred * float(calib.get("scale", 1.0)) + float(calib.get("bias", 0.0)))))
     return pred, feats, deck_cards
 
 
@@ -160,8 +169,18 @@ def predict(req: PredictRequest):
     if len(drivers) == 0:
         drivers.append("Deck profile has balanced structure across core dimensions.")
 
+    if req.scoreProxy is not None:
+        update_online_calibration(baseline, req.scoreProxy)
+    calib = get_online_calibration()
+
     response = {
         "modelVersion": META.get("modelVersion", "untrained"),
+        "onlineLearning": {
+            "enabled": True,
+            "calibrationBias": round(float(calib.get("bias", 0.0)), 4),
+            "calibrationScale": round(float(calib.get("scale", 1.0)), 4),
+            "seenEvents": int(calib.get("seenEvents", 0)),
+        },
         "mlForecast": {
             "predictedWinRate": round(baseline, 1),
             "confidence": confidence,
@@ -169,7 +188,13 @@ def predict(req: PredictRequest):
         },
         "mlSuggestions": suggestions,
     }
-    log_analysis_event(unique, normalize_tower(req.towerTroop), response["mlForecast"]["predictedWinRate"], response["mlForecast"]["confidence"])
+    log_analysis_event(
+        unique,
+        normalize_tower(req.towerTroop),
+        response["mlForecast"]["predictedWinRate"],
+        response["mlForecast"]["confidence"],
+        req.scoreProxy,
+    )
     return response
 
 
@@ -187,3 +212,8 @@ def feedback(req: FeedbackRequest):
         req.notes,
     )
     return {"ok": True}
+
+
+@app.get("/learning/status")
+def learning_status():
+    return {"ok": True, **get_learning_stats()}

@@ -213,9 +213,11 @@ function clearDeck() {
   renderCardPool();
   ["towerOptimizerList", "deltaBreakdown", "weaknessProfileList", "patchDriftList", "simDetails", "mlDriversList", "mlSuggestionsList"].forEach((id) => renderList(id, []));
   ["towerOptimizerBest", "deltaSummary", "patchDriftLine", "simSummary", "mlForecastLine"].forEach((id) => setText(id, ""));
+  setText("learningStatusLine", "");
   renderMetricTiles("subscoreTiles", []);
   renderMetricTiles("towerImpactTiles", []);
   renderMlForecastVisual(null);
+  renderTowerOptimizerVisual([]);
   renderSwapBoard([]);
   setRisk("riskAir", "riskAirLabel", 0);
   setRisk("riskSwarm", "riskSwarmLabel", 0);
@@ -681,12 +683,34 @@ async function analyzeDeck() {
     const data = await analyzePayload({ cardIds: cards.map((c) => c.id), towerTroop: state.selectedTowerTroop });
     state.latestAnalysis = data;
     renderAllAnalysis(data);
+    await renderLearningStatus();
     statusEl.textContent = "Analyzing suggested changes...";
     await runDeltaEngine();
     renderPatchDrift(data);
     statusEl.textContent = "Analysis complete.";
   } catch (err) {
     statusEl.textContent = `Error: ${err.message}`;
+  }
+}
+
+async function renderLearningStatus() {
+  const el = document.getElementById("learningStatusLine");
+  if (!el) return;
+  try {
+    const res = await fetch(apiUrl(ACTIVE_API_BASE, "ml/status"));
+    const data = await res.json();
+    if (!data?.ok) {
+      el.textContent = "Adaptive learning status: offline (local fallback mode).";
+      return;
+    }
+    const analysisEvents = Number(data.analysisEvents || 0);
+    const feedbackEvents = Number(data.feedbackEvents || 0);
+    const seen = Number(data.calibration?.seenEvents || 0);
+    const bias = Number(data.calibration?.bias || 0).toFixed(3);
+    const scale = Number(data.calibration?.scale || 1).toFixed(3);
+    el.textContent = `Adaptive learning active: ${analysisEvents} analyses, ${feedbackEvents} feedback rows, calibration seen=${seen} (bias ${bias}, scale ${scale}).`;
+  } catch {
+    el.textContent = "Adaptive learning status unavailable right now.";
   }
 }
 
@@ -976,7 +1000,18 @@ function renderTowerOptimizerVisual(ranked) {
   const root = document.getElementById("towerOptimizerVisual");
   if (!root) return;
   root.innerHTML = "";
-  (ranked || []).slice(0, 4).forEach((r, i) => {
+  const safeRanked = (ranked || []).slice(0, 4);
+  if (safeRanked.length === 0) {
+    const placeholder = document.createElement("article");
+    placeholder.className = "insight-card";
+    placeholder.innerHTML = `
+      <h4>No Tower Comparison Yet</h4>
+      <p>Click <strong>Optimize Tower Troop</strong> after Analyze to generate tower matchup spread visuals.</p>
+    `;
+    root.appendChild(placeholder);
+    return;
+  }
+  safeRanked.forEach((r, i) => {
     const card = document.createElement("article");
     card.className = "insight-card";
     card.innerHTML = `
@@ -1445,7 +1480,12 @@ function renderChart(breakdown) {
   chartInstance = new Chart(ctx, {
     type: "bar",
     data: { labels, datasets: [{ label: "Breakdown", data: values, backgroundColor: "#38bdf8" }] },
-    options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 2.6,
+      scales: { y: { beginAtZero: true } }
+    }
   });
 }
 

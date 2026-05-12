@@ -178,27 +178,27 @@
           </div>
         </section>
 
-        <section class="panel">
-          <h2>Subscores</h2>
-          <div id="subscoreTiles" class="metric-tiles"></div>
-          <ul id="subScoresList"></ul>
-          <h2>Tower Impact</h2>
-          <div id="towerImpactTiles" class="metric-tiles"></div>
-          <ul id="towerImpactList"></ul>
-        </section>
-
       </div>
     </div>
 
     <div class="analysis-mosaic">
-      <section class="panel analysis-block">
+      <section class="panel analysis-block span-12">
+        <h2>Subscores</h2>
+        <div id="subscoreTiles" class="metric-tiles"></div>
+        <ul id="subScoresList"></ul>
+        <h2>Tower Impact</h2>
+        <div id="towerImpactTiles" class="metric-tiles"></div>
+        <ul id="towerImpactList"></ul>
+      </section>
+
+      <section class="panel analysis-block span-4">
         <h2 class="section-label">Tower Optimizer</h2>
         <div id="towerOptimizerVisual" class="insight-cards"></div>
         <ul id="towerOptimizerList"></ul>
         <p id="towerOptimizerBest"></p>
       </section>
 
-      <section class="panel analysis-block">
+      <section class="panel analysis-block span-8">
         <h2 class="section-label">Card Swap Planner</h2>
         <div id="deltaVisualStats" class="chip-row"></div>
         <p id="deltaSummary"></p>
@@ -206,17 +206,18 @@
         <ul id="deltaBreakdown"></ul>
       </section>
 
-      <section class="panel analysis-block">
+      <section class="panel analysis-block span-6">
         <h2 class="section-label">Performance Outlook</h2>
         <div id="mlForecastVisual" class="ml-forecast-visual"></div>
         <p id="mlForecastLine"></p>
+        <p id="learningStatusLine" class="sub"></p>
         <ul id="mlDriversList"></ul>
         <h3>Smart Upgrade Suggestions</h3>
         <div id="mlSuggestionsVisual" class="swap-board"></div>
         <ul id="mlSuggestionsList"></ul>
       </section>
 
-      <section class="panel hidden analysis-block" id="weaknessPanel">
+      <section class="panel hidden analysis-block span-6" id="weaknessPanel">
         <h2 class="section-label">Weakness Profiler</h2>
         <div class="risk-grid" id="riskGrid">
           <div class="risk-card"><span>Air Risk</span><div class="risk-bar"><i id="riskAir"></i></div><b id="riskAirLabel">-</b></div>
@@ -231,7 +232,7 @@
         <ul id="weaknessProfileList"></ul>
       </section>
 
-      <section class="panel analysis-block">
+      <section class="panel analysis-block span-6">
         <h2 class="section-label">Meta Stability</h2>
         <p id="patchDriftLine"></p>
         <div class="drift-meter"><i id="patchDriftMeter"></i></div>
@@ -239,7 +240,7 @@
         <ul id="patchDriftList"></ul>
       </section>
 
-      <section class="panel analysis-block analysis-wide">
+      <section class="panel analysis-block span-6">
         <h2 class="section-label">Strengths / Weaknesses / Recommendations</h2>
         <div id="swrVisual" class="swr-visual-grid"></div>
         <h2>Strengths</h2>
@@ -250,7 +251,7 @@
         <ul id="recommendationsList"></ul>
       </section>
 
-      <section class="panel analysis-block analysis-wide">
+      <section class="panel analysis-block span-6">
         <h2 class="section-label">Breakdown Chart</h2>
         <h2>Breakdown</h2>
         <canvas id="synergyChart" height="140"></canvas>

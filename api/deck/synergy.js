@@ -1,6 +1,6 @@
 const { analyzeDeck } = require("../_lib/deck");
 
-async function getMlPrediction(cardIds, towerTroop) {
+async function getMlPrediction(cardIds, towerTroop, scoreProxy) {
   const base = process.env.ML_SERVICE_URL;
   if (!base) return null;
   try {
@@ -8,7 +8,7 @@ async function getMlPrediction(cardIds, towerTroop) {
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cardIds, towerTroop })
+      body: JSON.stringify({ cardIds, towerTroop, scoreProxy })
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -32,7 +32,7 @@ module.exports = async function handler(req, res) {
     const result = analyzeDeck(cardIds, towerTroop);
     if (result.error) return res.status(400).json({ error: result.error });
 
-    const ml = await getMlPrediction(cardIds, towerTroop);
+    const ml = await getMlPrediction(cardIds, towerTroop, result.score);
     if (ml) {
       result.mlForecast = ml.mlForecast || result.mlForecast;
       result.mlSuggestions = ml.mlSuggestions || result.mlSuggestions;

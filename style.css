@@ -98,13 +98,15 @@ h1, h2 {
   margin: 8px 0 24px;
 }
 .analysis-mosaic .analysis-block { margin-top: 0; }
-.analysis-mosaic > .analysis-block:nth-child(1) { grid-column: span 4; }
-.analysis-mosaic > .analysis-block:nth-child(2) { grid-column: span 8; }
-.analysis-mosaic > .analysis-block:nth-child(3) { grid-column: span 6; }
-.analysis-mosaic > .analysis-block:nth-child(4) { grid-column: span 6; }
-.analysis-mosaic > .analysis-block:nth-child(5) { grid-column: span 6; }
+.span-12 { grid-column: span 12; }
+.span-8 { grid-column: span 8; }
+.span-6 { grid-column: span 6; }
+.span-4 { grid-column: span 4; }
 .analysis-wide {
   grid-column: 1 / -1;
+}
+.analysis-mosaic #synergyChart {
+  max-height: 300px;
 }
 .section-label {
   margin: 0 0 8px;
@@ -815,11 +817,7 @@ ul { padding-left: 20px; }
   .ml-forecast-visual { grid-template-columns: 1fr; }
   .swr-visual-grid { grid-template-columns: 1fr; }
   .analysis-mosaic { grid-template-columns: 1fr; }
-  .analysis-mosaic > .analysis-block:nth-child(1),
-  .analysis-mosaic > .analysis-block:nth-child(2),
-  .analysis-mosaic > .analysis-block:nth-child(3),
-  .analysis-mosaic > .analysis-block:nth-child(4),
-  .analysis-mosaic > .analysis-block:nth-child(5) { grid-column: 1 / -1; }
+  .span-12, .span-8, .span-6, .span-4 { grid-column: 1 / -1; }
 }
 .card-chip.slot-evo .card-img { filter: saturate(1.25) contrast(1.05) drop-shadow(0 0 10px rgba(168,85,247,.45)); }
 .card-chip.slot-hero .card-img { filter: saturate(1.22) contrast(1.08) drop-shadow(0 0 10px rgba(245,158,11,.45)); }
