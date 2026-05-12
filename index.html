@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="style.css?v=20260512a" />
+  <link rel="stylesheet" href="style.css?v=20260512b" />
 </head>
 <body>
   <main class="container">
@@ -68,27 +68,6 @@
           <h2>Card Pool</h2>
           <input id="searchInput" placeholder="Search cards..." />
           <div id="cardPool" class="card-pool"></div>
-        </section>
-
-        <section class="panel">
-          <h2>Matchup Simulator</h2>
-          <p class="sub">Compare your deck against meta-style presets.</p>
-          <div class="sim-row">
-            <select id="simDeckSelect"></select>
-            <button id="simRunBtn">Run Matchup Sim</button>
-          </div>
-          <p id="simSummary"></p>
-          <ul id="simDetails"></ul>
-        </section>
-
-        <section class="panel">
-          <h2>Deck Revisions</h2>
-          <p class="sub">Save local snapshots and compare progress.</p>
-          <div class="sim-row">
-            <button id="saveRevisionBtn">Save Revision</button>
-            <button id="exportRevisionBtn">Export Snapshot</button>
-          </div>
-          <ul id="revisionList"></ul>
         </section>
       </div>
 
@@ -178,6 +157,27 @@
           </div>
         </section>
 
+        <section class="panel">
+          <h2>Matchup Simulator</h2>
+          <p class="sub">Compare your deck against meta-style presets.</p>
+          <div class="sim-row">
+            <select id="simDeckSelect"></select>
+            <button id="simRunBtn">Run Matchup Sim</button>
+          </div>
+          <p id="simSummary"></p>
+          <ul id="simDetails"></ul>
+        </section>
+
+        <section class="panel">
+          <h2>Deck Revisions</h2>
+          <p class="sub">Save local snapshots and compare progress.</p>
+          <div class="sim-row">
+            <button id="saveRevisionBtn">Save Revision</button>
+            <button id="exportRevisionBtn">Export Snapshot</button>
+          </div>
+          <ul id="revisionList"></ul>
+        </section>
+
       </div>
     </div>
 
@@ -221,6 +221,12 @@
         <h2 class="section-label">Performance Outlook</h2>
         <div id="mlForecastVisual" class="ml-forecast-visual"></div>
         <p id="mlForecastLine"></p>
+        <div class="feedback-row">
+          <span class="feedback-label">Match Result Feedback</span>
+          <button id="mlWonBtn" class="feedback-btn good">I Won</button>
+          <button id="mlLostBtn" class="feedback-btn bad">I Lost</button>
+        </div>
+        <p id="mlFeedbackLine" class="sub"></p>
         <p id="learningStatusLine" class="sub"></p>
         <ul id="mlDriversList"></ul>
         <h3>Smart Upgrade Suggestions</h3>
@@ -271,7 +277,7 @@
   </main>
 
   <script src="config.js?v=20260502f"></script>
-  <script src="script.js?v=20260512a"></script>
+  <script src="script.js?v=20260512b"></script>
 </body>
 </html>
 

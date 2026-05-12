@@ -126,6 +126,8 @@ document.getElementById("clearBtn").addEventListener("click", clearDeck);
 document.getElementById("simRunBtn").addEventListener("click", runMatchupSim);
 document.getElementById("saveRevisionBtn").addEventListener("click", saveRevision);
 document.getElementById("exportRevisionBtn").addEventListener("click", exportSnapshot);
+document.getElementById("mlWonBtn")?.addEventListener("click", () => submitMlFeedback(true));
+document.getElementById("mlLostBtn")?.addEventListener("click", () => submitMlFeedback(false));
 searchEl.addEventListener("input", onSearch);
 document.querySelectorAll(".weakness-btn").forEach((btn) => btn.addEventListener("click", () => runWeaknessProfile(btn.dataset.profile)));
 
@@ -218,6 +220,7 @@ function clearDeck() {
   ["towerOptimizerList", "deltaBreakdown", "weaknessProfileList", "patchDriftList", "simDetails", "mlDriversList", "mlSuggestionsList"].forEach((id) => renderList(id, []));
   ["towerOptimizerBest", "deltaSummary", "patchDriftLine", "simSummary", "mlForecastLine"].forEach((id) => setText(id, ""));
   setText("learningStatusLine", "");
+  setText("mlFeedbackLine", "");
   renderMetricTiles("subscoreTiles", []);
   renderMetricTiles("towerImpactTiles", []);
   renderSubscoreMiniChart(null);
@@ -717,6 +720,35 @@ async function renderLearningStatus() {
     el.textContent = `Adaptive learning active: ${analysisEvents} analyses, ${feedbackEvents} feedback rows, calibration seen=${seen} (bias ${bias}, scale ${scale}).`;
   } catch {
     el.textContent = "Adaptive learning status unavailable right now.";
+  }
+}
+
+async function submitMlFeedback(won) {
+  const cards = state.deck.filter(Boolean);
+  if (cards.length !== 8) {
+    statusEl.textContent = "Build 8-card deck first, then submit match feedback.";
+    return;
+  }
+  const line = document.getElementById("mlFeedbackLine");
+  if (line) line.textContent = "Saving feedback...";
+  try {
+    const payload = {
+      cardIds: cards.map((c) => c.id),
+      towerTroop: state.selectedTowerTroop,
+      won: !!won
+    };
+    const res = await fetch(apiUrl(ACTIVE_API_BASE, "ml/feedback"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok) throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
+    if (line) line.textContent = won ? "Feedback saved: marked as win." : "Feedback saved: marked as loss.";
+    await renderLearningStatus();
+  } catch (err) {
+    if (line) line.textContent = "Could not submit feedback right now.";
+    statusEl.textContent = `Feedback error: ${err.message || "unknown error"}`;
   }
 }
 

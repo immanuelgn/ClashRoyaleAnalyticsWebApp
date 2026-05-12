@@ -129,7 +129,7 @@ h1, h2 {
 }
 .dashboard-grid {
   display: grid;
-  grid-template-columns: minmax(440px, 0.95fr) minmax(620px, 1.05fr);
+  grid-template-columns: minmax(520px, 1.08fr) minmax(560px, 0.92fr);
   gap: 14px;
   align-items: start;
 }
@@ -676,9 +676,9 @@ button.secondary { background: #334155; color: #e2e8f0; }
 .card-pool {
   margin-top: 10px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
   gap: 10px;
-  max-height: 54vh;
+  max-height: 44vh;
   overflow: auto;
   padding-right: 4px;
 }
@@ -778,6 +778,36 @@ ul { padding-left: 20px; }
   font-size: 22px;
   font-weight: 900;
   margin-top: 2px;
+}
+.feedback-row {
+  margin: 6px 0 2px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.feedback-label {
+  font-size: 12px;
+  color: #c6dbf7;
+  font-weight: 700;
+  margin-right: 4px;
+}
+.feedback-btn {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #2f4f7a;
+  font-size: 12px;
+  font-weight: 800;
+}
+.feedback-btn.good {
+  background: linear-gradient(160deg, #14532d, #16a34a);
+  color: #eafff4;
+  border-color: rgba(74, 222, 128, 0.55);
+}
+.feedback-btn.bad {
+  background: linear-gradient(160deg, #6b1f1f, #b91c1c);
+  color: #fff1f2;
+  border-color: rgba(252, 165, 165, 0.55);
 }
 .drift-meter {
   margin: 6px 0 10px;
