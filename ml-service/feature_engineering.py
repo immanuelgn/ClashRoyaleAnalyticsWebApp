@@ -4,8 +4,11 @@ import json
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+from meta_priors import compute_meta_features, load_meta_decks
+
 ROOT = Path(__file__).resolve().parents[1]
 CARDS_PATH = ROOT / "data" / "cards.json"
+META_DECKS = load_meta_decks()
 
 
 def load_cards() -> List[dict]:
@@ -48,9 +51,11 @@ def card_metadata(card: dict) -> dict:
     }
 
 
-def build_feature_dict(cards: List[dict], tower_troop: str) -> Dict[str, float]:
+def build_feature_dict(cards: List[dict], tower_troop: str, deck_ids: List[int] | None = None) -> Dict[str, float]:
     md = [card_metadata(c) for c in cards]
     avg_elixir = sum((c.get("elixirCost") or 0) for c in cards) / max(len(cards), 1)
+    ids = deck_ids if deck_ids is not None else [int(c.get("id") or 0) for c in cards]
+    meta = compute_meta_features(ids, META_DECKS)
     feats = {
         "avg_elixir": avg_elixir,
         "win_con_count": sum(1 for m in md if m["is_win_condition"]),
@@ -63,6 +68,11 @@ def build_feature_dict(cards: List[dict], tower_troop: str) -> Dict[str, float]:
         "cycle_cards": sum(1 for m in md if m["is_cycle"]),
         "reset_count": sum(1 for m in md if m["is_reset"]),
         "tank_count": sum(1 for m in md if m["is_tank"]),
+        "meta_max_similarity": float(meta["meta_max_similarity"]),
+        "meta_top3_similarity": float(meta["meta_top3_similarity"]),
+        "meta_weighted_win_rate": float(meta["meta_weighted_win_rate"]),
+        "meta_weighted_usage": float(meta["meta_weighted_usage"]),
+        "meta_weighted_rating": float(meta["meta_weighted_rating"]),
     }
     tower = normalize_tower(tower_troop)
     feats["tower_tower_princess"] = 1.0 if tower == "tower_princess" else 0.0
@@ -92,6 +102,11 @@ FEATURE_ORDER = [
     "tower_royal_chef",
     "tower_cannoneer",
     "tower_dagger_duchess",
+    "meta_max_similarity",
+    "meta_top3_similarity",
+    "meta_weighted_win_rate",
+    "meta_weighted_usage",
+    "meta_weighted_rating",
 ]
 
 
@@ -107,6 +122,5 @@ def build_feature_vector_from_ids(ids: List[int], tower_troop: str, card_map: Di
     cards = deck_from_ids(ids, card_map)
     if len(cards) != 8:
         raise ValueError("Deck must contain 8 valid cards.")
-    feats = build_feature_dict(cards, tower_troop)
+    feats = build_feature_dict(cards, tower_troop, ids)
     return vectorize(feats, FEATURE_ORDER), feats, cards
-

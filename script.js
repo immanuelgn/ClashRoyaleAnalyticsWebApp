@@ -221,6 +221,10 @@ function clearDeck() {
   ["towerOptimizerBest", "deltaSummary", "patchDriftLine", "simSummary", "mlForecastLine"].forEach((id) => setText(id, ""));
   setText("learningStatusLine", "");
   setText("mlFeedbackLine", "");
+  ["mlOppArchetypeInput", "mlTrophiesInput", "mlCrownsForInput", "mlCrownsAgainstInput"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
   renderMetricTiles("subscoreTiles", []);
   renderMetricTiles("towerImpactTiles", []);
   renderSubscoreMiniChart(null);
@@ -729,13 +733,26 @@ async function submitMlFeedback(won) {
     statusEl.textContent = "Build 8-card deck first, then submit match feedback.";
     return;
   }
+  const oppArchetype = document.getElementById("mlOppArchetypeInput")?.value?.trim() || "";
+  const trophiesRaw = document.getElementById("mlTrophiesInput")?.value;
+  const crownsForRaw = document.getElementById("mlCrownsForInput")?.value;
+  const crownsAgainstRaw = document.getElementById("mlCrownsAgainstInput")?.value;
+  const trophies = trophiesRaw === "" ? null : Number(trophiesRaw);
+  const crownsFor = crownsForRaw === "" ? null : Number(crownsForRaw);
+  const crownsAgainst = crownsAgainstRaw === "" ? null : Number(crownsAgainstRaw);
   const line = document.getElementById("mlFeedbackLine");
   if (line) line.textContent = "Saving feedback...";
   try {
     const payload = {
       cardIds: cards.map((c) => c.id),
       towerTroop: state.selectedTowerTroop,
-      won: !!won
+      won: !!won,
+      crownsFor: Number.isFinite(crownsFor) ? Math.max(0, Math.min(3, crownsFor)) : null,
+      crownsAgainst: Number.isFinite(crownsAgainst) ? Math.max(0, Math.min(3, crownsAgainst)) : null,
+      opponentArchetype: oppArchetype || null,
+      gameMode: "normal_battle",
+      trophies: Number.isFinite(trophies) ? Math.max(0, Math.min(10000, trophies)) : null,
+      patchVersion: "live"
     };
     const res = await fetch(apiUrl(ACTIVE_API_BASE, "ml/feedback"), {
       method: "POST",
@@ -1274,10 +1291,12 @@ function renderMlForecastVisual(data) {
   const wr = Number(data.mlForecast.predictedWinRate || 0).toFixed(1);
   const conf = Number(data.mlForecast.confidence || 0);
   const sugg = (data.mlSuggestions || []).filter((s) => Number(s.deltaWinRate) > 0).length;
+  const metaSim = Math.round((Number(data.metaSignals?.maxSimilarity || 0)) * 100);
   const cards = [
     { label: "Predicted Win Rate", main: `${wr}%` },
     { label: "Prediction Confidence", main: `${conf}%` },
-    { label: "Viable Swap Options", main: `${sugg}` }
+    { label: "Viable Swap Options", main: `${sugg}` },
+    { label: "Meta Similarity", main: `${metaSim}%` }
   ];
   cards.forEach((c) => {
     const node = document.createElement("article");

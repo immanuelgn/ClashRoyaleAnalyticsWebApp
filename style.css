@@ -760,7 +760,7 @@ ul { padding-left: 20px; }
 }
 .ml-forecast-visual {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
   margin-bottom: 10px;
 }
@@ -808,6 +808,20 @@ ul { padding-left: 20px; }
   background: linear-gradient(160deg, #6b1f1f, #b91c1c);
   color: #fff1f2;
   border-color: rgba(252, 165, 165, 0.55);
+}
+.feedback-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.feedback-grid input {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid #35557f;
+  background: rgba(9, 20, 42, 0.82);
+  color: #deebff;
 }
 .drift-meter {
   margin: 6px 0 10px;
@@ -880,6 +894,7 @@ ul { padding-left: 20px; }
   .swr-visual-grid { grid-template-columns: 1fr; }
   .analysis-mosaic { grid-template-columns: 1fr; }
   .span-12, .span-8, .span-6, .span-4 { grid-column: 1 / -1; }
+  .feedback-grid { grid-template-columns: 1fr; }
 }
 .card-chip.slot-evo .card-img { filter: saturate(1.25) contrast(1.05) drop-shadow(0 0 10px rgba(168,85,247,.45)); }
 .card-chip.slot-hero .card-img { filter: saturate(1.22) contrast(1.08) drop-shadow(0 0 10px rgba(245,158,11,.45)); }

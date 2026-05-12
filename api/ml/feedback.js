@@ -18,6 +18,12 @@ module.exports = async function handler(req, res) {
     const cardIds = Array.isArray(body.cardIds) ? body.cardIds.map(Number) : [];
     const towerTroop = body.towerTroop || "tower_princess";
     const won = !!body.won;
+    const crownsFor = Number.isFinite(Number(body.crownsFor)) ? Number(body.crownsFor) : null;
+    const crownsAgainst = Number.isFinite(Number(body.crownsAgainst)) ? Number(body.crownsAgainst) : null;
+    const opponentArchetype = body.opponentArchetype ? String(body.opponentArchetype).trim() : null;
+    const gameMode = body.gameMode ? String(body.gameMode).trim() : null;
+    const trophies = Number.isFinite(Number(body.trophies)) ? Number(body.trophies) : null;
+    const patchVersion = body.patchVersion ? String(body.patchVersion).trim() : null;
 
     if (new Set(cardIds).size !== 8) {
       return res.status(400).json({ ok: false, error: "Deck must contain 8 unique card IDs." });
@@ -30,7 +36,13 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         cardIds,
         towerTroop,
-        won
+        won,
+        crownsFor,
+        crownsAgainst,
+        opponentArchetype,
+        gameMode,
+        trophies,
+        patchVersion
       })
     });
 

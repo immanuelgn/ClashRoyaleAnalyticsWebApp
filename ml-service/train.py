@@ -10,6 +10,7 @@ from sklearn.ensemble import RandomForestRegressor
 
 from db import init_db, load_feedback_rows
 from feature_engineering import FEATURE_ORDER, build_feature_dict, load_cards, normalize_tower, vectorize
+from meta_priors import load_meta_decks
 
 ROOT = Path(__file__).resolve().parent
 MODEL_PATH = ROOT / "model.joblib"
@@ -32,6 +33,10 @@ def pseudo_label(feats: dict) -> float:
     score += feats["tower_dagger_duchess"] * (1.5 if feats["cycle_cards"] >= 2 else -0.8)
     score += feats["tower_cannoneer"] * (1.3 if feats["air_counters"] >= 3 else -1.0)
     score += feats["tower_royal_chef"] * (1.2 if feats["tank_count"] >= 2 and feats["avg_elixir"] >= 3.7 else -1.8)
+    score += min(7.0, feats.get("meta_max_similarity", 0) * 12.0)
+    score += min(4.0, feats.get("meta_top3_similarity", 0) * 8.0)
+    score += max(-3.0, min(4.0, (feats.get("meta_weighted_win_rate", 0) - 50.0) * 0.45))
+    score += max(-2.0, min(3.5, feats.get("meta_weighted_usage", 0) * 0.55))
     score += random.uniform(-1.5, 1.5)
     return float(max(35.0, min(80.0, score)))
 
@@ -48,9 +53,52 @@ def build_training_set(sample_count: int = 5000):
         deck = random.sample(card_ids, 8)
         tower = random.choice(towers)
         deck_cards = [card_by_id[i] for i in deck]
-        feats = build_feature_dict(deck_cards, tower)
+        feats = build_feature_dict(deck_cards, tower, deck)
         X.append(vectorize(feats, FEATURE_ORDER))
         y.append(pseudo_label(feats))
+    return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32)
+
+
+def build_meta_anchor_training_set(variations_per_deck: int = 22):
+    cards = load_cards()
+    card_by_id = {int(c["id"]): c for c in cards}
+    card_ids = list(card_by_id.keys())
+    meta_rows = load_meta_decks()
+    towers = ["tower_princess", "royal_chef", "cannoneer", "dagger_duchess"]
+
+    X = []
+    y = []
+    for row in meta_rows:
+        ids = [int(i) for i in (row.get("cards") or [])]
+        if len(set(ids)) != 8 or any(i not in card_by_id for i in ids):
+            continue
+        base_wr = float(row.get("winRatePct") or 52.0)
+        base_target = float(max(40.0, min(80.0, 35.0 + ((base_wr - 45.0) * 2.2))))
+        base_tower = random.choice(towers)
+        base_cards = [card_by_id[i] for i in ids]
+        base_feats = build_feature_dict(base_cards, base_tower, ids)
+        X.append(vectorize(base_feats, FEATURE_ORDER))
+        y.append(base_target)
+
+        for _ in range(variations_per_deck):
+            deck = list(ids)
+            slot = random.randint(0, 7)
+            outgoing = card_by_id[deck[slot]]
+            outgoing_cost = float(outgoing.get("elixirCost") or 0)
+            candidates = [cid for cid in card_ids if cid not in deck and abs(float(card_by_id[cid].get("elixirCost") or 0) - outgoing_cost) <= 2.0]
+            if not candidates:
+                continue
+            deck[slot] = random.choice(candidates)
+            tower = random.choice(towers)
+            next_cards = [card_by_id[i] for i in deck]
+            feats = build_feature_dict(next_cards, tower, deck)
+            X.append(vectorize(feats, FEATURE_ORDER))
+            similarity = float(feats.get("meta_max_similarity") or 0.0)
+            penalty = max(0.8, 4.4 - (similarity * 4.0))
+            y.append(float(max(35.0, min(80.0, base_target - penalty + random.uniform(-0.9, 0.9)))))
+
+    if not X:
+        return np.array([], dtype=np.float32), np.array([], dtype=np.float32)
     return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32)
 
 
@@ -65,7 +113,7 @@ def build_feedback_training_set():
         deck = [card_by_id[i] for i in ids if i in card_by_id]
         if len(deck) != 8:
             continue
-        feats = build_feature_dict(deck, normalize_tower(r["tower_troop"]))
+        feats = build_feature_dict(deck, normalize_tower(r["tower_troop"]), ids)
         base = 58.0 if int(r["won"]) == 1 else 44.0
         cf = r.get("crowns_for")
         ca = r.get("crowns_against")
@@ -84,12 +132,18 @@ def main():
     np.random.seed(42)
     init_db()
     X_syn, y_syn = build_training_set()
+    X_meta, y_meta = build_meta_anchor_training_set()
     X_fb, y_fb = build_feedback_training_set()
+    chunks_x = [X_syn]
+    chunks_y = [y_syn]
+    if len(y_meta) > 0:
+        chunks_x.append(X_meta)
+        chunks_y.append(y_meta)
     if len(y_fb) > 0:
-        X = np.concatenate([X_syn, X_fb], axis=0)
-        y = np.concatenate([y_syn, y_fb], axis=0)
-    else:
-        X, y = X_syn, y_syn
+        chunks_x.append(X_fb)
+        chunks_y.append(y_fb)
+    X = np.concatenate(chunks_x, axis=0)
+    y = np.concatenate(chunks_y, axis=0)
 
     model = RandomForestRegressor(
         n_estimators=300,
@@ -102,9 +156,10 @@ def main():
 
     joblib.dump(model, MODEL_PATH)
     meta = {
-        "modelVersion": "rf-v1",
+        "modelVersion": "rf-v2-meta-prior",
         "featureOrder": FEATURE_ORDER,
         "trainSamples": int(len(y)),
+        "metaAnchorSamples": int(len(y_meta)),
         "feedbackSamples": int(len(y_fb)),
         "target": "predicted_win_rate_percent",
     }

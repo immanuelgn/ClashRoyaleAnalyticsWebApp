@@ -47,6 +47,10 @@ class FeedbackRequest(BaseModel):
     won: bool
     crownsFor: int | None = None
     crownsAgainst: int | None = None
+    opponentArchetype: str | None = None
+    gameMode: str | None = None
+    trophies: int | None = None
+    patchVersion: str | None = None
     notes: str | None = None
 
 
@@ -186,6 +190,13 @@ def predict(req: PredictRequest):
             "confidence": confidence,
             "topDrivers": drivers[:3],
         },
+        "metaSignals": {
+            "maxSimilarity": round(float(feats.get("meta_max_similarity", 0.0)), 3),
+            "top3Similarity": round(float(feats.get("meta_top3_similarity", 0.0)), 3),
+            "weightedMetaWinRate": round(float(feats.get("meta_weighted_win_rate", 0.0)), 2),
+            "weightedMetaUsage": round(float(feats.get("meta_weighted_usage", 0.0)), 2),
+            "weightedMetaRating": round(float(feats.get("meta_weighted_rating", 0.0)), 2),
+        },
         "mlSuggestions": suggestions,
     }
     log_analysis_event(
@@ -209,6 +220,10 @@ def feedback(req: FeedbackRequest):
         bool(req.won),
         req.crownsFor,
         req.crownsAgainst,
+        req.opponentArchetype,
+        req.gameMode,
+        req.trophies,
+        req.patchVersion,
         req.notes,
     )
     return {"ok": True}

@@ -45,10 +45,18 @@ def init_db() -> None:
                   won INTEGER NOT NULL,
                   crowns_for INTEGER,
                   crowns_against INTEGER,
+                  opponent_archetype TEXT,
+                  game_mode TEXT,
+                  trophies INTEGER,
+                  patch_version TEXT,
                   notes TEXT
                 )
                 """
             )
+            cur.execute("ALTER TABLE battle_feedback ADD COLUMN IF NOT EXISTS opponent_archetype TEXT")
+            cur.execute("ALTER TABLE battle_feedback ADD COLUMN IF NOT EXISTS game_mode TEXT")
+            cur.execute("ALTER TABLE battle_feedback ADD COLUMN IF NOT EXISTS trophies INTEGER")
+            cur.execute("ALTER TABLE battle_feedback ADD COLUMN IF NOT EXISTS patch_version TEXT")
             cur.execute(
                 """
                 CREATE TABLE IF NOT EXISTS online_calibration (
@@ -180,14 +188,21 @@ def add_battle_feedback(
     won: bool,
     crowns_for: Optional[int],
     crowns_against: Optional[int],
+    opponent_archetype: Optional[str],
+    game_mode: Optional[str],
+    trophies: Optional[int],
+    patch_version: Optional[str],
     notes: Optional[str],
 ) -> None:
     with _conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO battle_feedback (card_ids_json, tower_troop, won, crowns_for, crowns_against, notes)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO battle_feedback (
+                  card_ids_json, tower_troop, won, crowns_for, crowns_against,
+                  opponent_archetype, game_mode, trophies, patch_version, notes
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     json.dumps(card_ids),
@@ -195,6 +210,10 @@ def add_battle_feedback(
                     1 if won else 0,
                     crowns_for,
                     crowns_against,
+                    (opponent_archetype or "").strip(),
+                    (game_mode or "").strip(),
+                    trophies,
+                    (patch_version or "").strip(),
                     notes or "",
                 ),
             )
@@ -206,7 +225,7 @@ def load_feedback_rows() -> List[Dict]:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT card_ids_json, tower_troop, won, crowns_for, crowns_against
+                SELECT card_ids_json, tower_troop, won, crowns_for, crowns_against, opponent_archetype, game_mode, trophies, patch_version
                 FROM battle_feedback
                 ORDER BY id DESC
                 LIMIT 50000
@@ -232,6 +251,10 @@ def load_feedback_rows() -> List[Dict]:
                 "won": int(r.get("won") or 0),
                 "crowns_for": r.get("crowns_for"),
                 "crowns_against": r.get("crowns_against"),
+                "opponent_archetype": r.get("opponent_archetype"),
+                "game_mode": r.get("game_mode"),
+                "trophies": r.get("trophies"),
+                "patch_version": r.get("patch_version"),
             }
         )
     return out

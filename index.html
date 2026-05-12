@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="style.css?v=20260512b" />
+  <link rel="stylesheet" href="style.css?v=20260512c" />
 </head>
 <body>
   <main class="container">
@@ -226,6 +226,12 @@
           <button id="mlWonBtn" class="feedback-btn good">I Won</button>
           <button id="mlLostBtn" class="feedback-btn bad">I Lost</button>
         </div>
+        <div class="feedback-grid">
+          <input id="mlOppArchetypeInput" type="text" placeholder="Opponent archetype (optional)" />
+          <input id="mlTrophiesInput" type="number" min="0" max="10000" placeholder="Trophies (optional)" />
+          <input id="mlCrownsForInput" type="number" min="0" max="3" placeholder="Crowns For" />
+          <input id="mlCrownsAgainstInput" type="number" min="0" max="3" placeholder="Crowns Against" />
+        </div>
         <p id="mlFeedbackLine" class="sub"></p>
         <p id="learningStatusLine" class="sub"></p>
         <ul id="mlDriversList"></ul>
@@ -277,7 +283,7 @@
   </main>
 
   <script src="config.js?v=20260502f"></script>
-  <script src="script.js?v=20260512b"></script>
+  <script src="script.js?v=20260512c"></script>
 </body>
 </html>
 

@@ -1,0 +1,102 @@
+[
+  {
+    "name": "Hog EQ Cycle",
+    "cards": [26000021, 26000014, 26000012, 26000010, 26000031, 28000014, 28000000, 27000000],
+    "archetype": "cycle",
+    "source": "royaleapi",
+    "timeWindow": "1d",
+    "usagePct": 4.8,
+    "winRatePct": 54.1,
+    "rating": 43
+  },
+  {
+    "name": "Giant Beatdown",
+    "cards": [26000003, 26000007, 26000015, 26000024, 26000019, 28000000, 28000017, 26000010],
+    "archetype": "beatdown",
+    "source": "royaleapi",
+    "timeWindow": "1d",
+    "usagePct": 2.3,
+    "winRatePct": 53.2,
+    "rating": 34
+  },
+  {
+    "name": "X-Bow Siege",
+    "cards": [27000008, 26000002, 26000010, 26000001, 28000004, 28000017, 26000031, 28000010],
+    "archetype": "siege",
+    "source": "royaleapi",
+    "timeWindow": "1d",
+    "usagePct": 1.6,
+    "winRatePct": 52.7,
+    "rating": 30
+  },
+  {
+    "name": "Lava Loon",
+    "cards": [26000029, 26000006, 26000022, 26000015, 26000011, 28000000, 28000008, 26000010],
+    "archetype": "beatdown",
+    "source": "royaleapi",
+    "timeWindow": "1d",
+    "usagePct": 1.9,
+    "winRatePct": 53.9,
+    "rating": 36
+  },
+  {
+    "name": "Hyper Bait",
+    "cards": [28000004, 26000026, 26000040, 26000041, 28000003, 28000011, 26000000, 27000003],
+    "archetype": "bait",
+    "source": "royaleapi",
+    "timeWindow": "1d",
+    "usagePct": 2.1,
+    "winRatePct": 52.8,
+    "rating": 31
+  },
+  {
+    "name": "Classic Golem",
+    "cards": [26000009, 26000048, 26000015, 26000035, 28000012, 28000007, 28000015, 26000039],
+    "archetype": "beatdown",
+    "source": "royaleapi",
+    "timeWindow": "1d",
+    "usagePct": 1.2,
+    "winRatePct": 52.5,
+    "rating": 28
+  },
+  {
+    "name": "Royal Hogs EQ",
+    "cards": [26000059, 28000014, 26000072, 27000000, 26000031, 28000011, 26000010, 26000014],
+    "archetype": "control",
+    "source": "royaleapi",
+    "timeWindow": "1d",
+    "usagePct": 1.5,
+    "winRatePct": 53.1,
+    "rating": 33
+  },
+  {
+    "name": "PEKKA Bridge Spam",
+    "cards": [26000004, 26000046, 26000050, 26000036, 26000042, 28000009, 28000008, 26000062],
+    "archetype": "control",
+    "source": "royaleapi",
+    "timeWindow": "1d",
+    "usagePct": 2.7,
+    "winRatePct": 53.8,
+    "rating": 38
+  },
+  {
+    "name": "Miner Poison Control",
+    "cards": [26000032, 26000014, 26000010, 26000000, 28000009, 28000011, 28000012, 26000061],
+    "archetype": "control",
+    "source": "royaleapi",
+    "timeWindow": "1d",
+    "usagePct": 1.4,
+    "winRatePct": 52.6,
+    "rating": 29
+  },
+  {
+    "name": "Electro Giant Control",
+    "cards": [26000085, 27000006, 26000042, 26000063, 28000012, 28000007, 28000008, 26000061],
+    "archetype": "beatdown",
+    "source": "royaleapi",
+    "timeWindow": "1d",
+    "usagePct": 1.8,
+    "winRatePct": 53.4,
+    "rating": 35
+  }
+]
