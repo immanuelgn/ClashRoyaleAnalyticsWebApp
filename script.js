@@ -1,5 +1,7 @@
 let chartInstance = null;
 let radarChartInstance = null;
+let subscoreMiniChartInstance = null;
+let towerImpactMiniChartInstance = null;
 let ACTIVE_API_BASE = window.__CR_API_BASE__ || "http://127.0.0.1:7295";
 const ASSET_VARIANT_BASE = "https://raw.githubusercontent.com/RoyaleAPI/cr-api-assets/master/cards/";
 const REV_KEY = "cr_deck_revisions_v1";
@@ -144,6 +146,8 @@ async function boot() {
     renderRevisionList();
     renderQuickRead(null);
     renderBattleSnapshot(null);
+    renderSubscoreMiniChart(null);
+    renderTowerImpactMiniChart(null);
     statusEl.textContent = "Drag cards, choose tower troop, then analyze.";
   } catch (err) {
     console.error(err);
@@ -216,6 +220,8 @@ function clearDeck() {
   setText("learningStatusLine", "");
   renderMetricTiles("subscoreTiles", []);
   renderMetricTiles("towerImpactTiles", []);
+  renderSubscoreMiniChart(null);
+  renderTowerImpactMiniChart(null);
   renderMlForecastVisual(null);
   renderTowerOptimizerVisual([]);
   renderSwapBoard([]);
@@ -734,6 +740,8 @@ function renderAllAnalysis(data) {
   renderList("towerImpactList", objectToList(data.towerImpact));
   renderMetricTiles("subscoreTiles", buildVisualMetrics(subs, { Offense: 35, Defense: 25, Spells: 25, Cycle: 20, Consistency: 25 }));
   renderMetricTiles("towerImpactTiles", buildVisualMetrics(data.towerImpact, {}, 10));
+  renderSubscoreMiniChart(subs);
+  renderTowerImpactMiniChart(data.towerImpact);
   renderList("strengthsList", data.strengths || []);
   renderList("weaknessesList", data.weaknesses || []);
   renderList("recommendationsList", data.recommendations || []);
@@ -1458,6 +1466,7 @@ function renderList(elementId, items) {
   ul.innerHTML = "";
   if (!items.length) {
     const li = document.createElement("li");
+    li.className = "list-empty";
     li.textContent = "None";
     ul.appendChild(li);
     return;
@@ -1473,18 +1482,146 @@ function renderList(elementId, items) {
 function objectToList(obj) { return Object.entries(obj || {}).map(([k, v]) => `${k}: ${v}`); }
 
 function renderChart(breakdown) {
-  const labels = Object.keys(breakdown);
-  const values = Object.values(breakdown);
+  const labels = Object.keys(breakdown || {});
+  const values = Object.values(breakdown || {});
   const ctx = document.getElementById("synergyChart").getContext("2d");
   if (chartInstance) chartInstance.destroy();
   chartInstance = new Chart(ctx, {
     type: "bar",
-    data: { labels, datasets: [{ label: "Breakdown", data: values, backgroundColor: "#38bdf8" }] },
+    data: {
+      labels,
+      datasets: [{
+        label: "Breakdown",
+        data: values,
+        borderRadius: 8,
+        borderSkipped: false,
+        backgroundColor: [
+          "#38bdf8",
+          "#22d3ee",
+          "#60a5fa",
+          "#818cf8",
+          "#a78bfa",
+          "#34d399",
+          "#f59e0b",
+          "#fb7185"
+        ]
+      }]
+    },
     options: {
       responsive: true,
       maintainAspectRatio: true,
-      aspectRatio: 2.6,
-      scales: { y: { beginAtZero: true } }
+      aspectRatio: 2.1,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          ticks: { color: "#cfe6ff", maxRotation: 0, autoSkip: true },
+          grid: { color: "rgba(59, 130, 246, 0.12)" }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: "#cfe6ff" },
+          grid: { color: "rgba(59, 130, 246, 0.15)" }
+        }
+      }
+    }
+  });
+}
+
+function renderSubscoreMiniChart(subScores) {
+  const ctx = document.getElementById("subscoreMiniChart")?.getContext("2d");
+  if (!ctx) return;
+  const labels = ["Offense", "Defense", "Spells", "Cycle", "Consistency"];
+  const hasData = !!subScores && labels.some((k) => Number(subScores[k] || 0) > 0);
+  const values = hasData ? labels.map((k) => Number(subScores[k] || 0)) : [14, 10, 9, 8, 11];
+  if (subscoreMiniChartInstance) subscoreMiniChartInstance.destroy();
+  subscoreMiniChartInstance = new Chart(ctx, {
+    type: "radar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Subscores",
+        data: values,
+        fill: true,
+        borderWidth: 2,
+        borderColor: hasData ? "#22d3ee" : "rgba(148, 163, 184, 0.8)",
+        backgroundColor: hasData ? "rgba(34, 211, 238, 0.22)" : "rgba(148, 163, 184, 0.16)",
+        pointRadius: 3,
+        pointHoverRadius: 4,
+        pointBackgroundColor: hasData ? "#7dd3fc" : "#94a3b8"
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        r: {
+          suggestedMin: 0,
+          suggestedMax: 35,
+          angleLines: { color: "rgba(148, 163, 184, 0.22)" },
+          grid: { color: "rgba(148, 163, 184, 0.25)" },
+          pointLabels: { color: "#cfe6ff", font: { size: 11 } },
+          ticks: {
+            display: false,
+            backdropColor: "transparent"
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderTowerImpactMiniChart(towerImpact) {
+  const ctx = document.getElementById("towerImpactMiniChart")?.getContext("2d");
+  if (!ctx) return;
+  const fallback = [
+    ["Pressure", 2],
+    ["Defense", 3],
+    ["Cycle", 2],
+    ["Spell Sync", 2]
+  ];
+  const entries = Object.entries(towerImpact || {}).filter(([, v]) => Number.isFinite(Number(v)));
+  const hasData = entries.length > 0;
+  const source = hasData ? entries.slice(0, 6) : fallback;
+  const labels = source.map(([k]) => k);
+  const values = source.map(([, v]) => Number(v || 0));
+  if (towerImpactMiniChartInstance) towerImpactMiniChartInstance.destroy();
+  towerImpactMiniChartInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        borderRadius: 7,
+        borderSkipped: false,
+        backgroundColor: hasData
+          ? ["#22d3ee", "#38bdf8", "#60a5fa", "#818cf8", "#a78bfa", "#34d399"]
+          : "rgba(148, 163, 184, 0.45)"
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          suggestedMax: 10,
+          ticks: { color: "#cfe6ff" },
+          grid: { color: "rgba(59, 130, 246, 0.15)" }
+        },
+        y: {
+          ticks: { color: "#cfe6ff" },
+          grid: { display: false }
+        }
+      }
     }
   });
 }

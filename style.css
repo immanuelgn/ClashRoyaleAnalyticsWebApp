@@ -89,11 +89,17 @@ h1, h2 {
 }
 .analysis-block {
   margin-top: 12px;
+  min-height: 250px;
+  display: grid;
+  grid-auto-rows: min-content;
+  align-content: start;
+  gap: 10px;
 }
 .analysis-mosaic {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 16px;
+  gap: 18px;
+  grid-auto-flow: dense;
   align-items: start;
   margin: 8px 0 24px;
 }
@@ -115,6 +121,11 @@ h1, h2 {
   letter-spacing: .08em;
   color: #9cc4ff;
   opacity: .95;
+}
+.analysis-sub {
+  margin: -2px 0 2px;
+  font-size: 12px;
+  color: #bcd0ea;
 }
 .dashboard-grid {
   display: grid;
@@ -440,7 +451,7 @@ button.secondary { background: #334155; color: #e2e8f0; }
 }
 .insight-cards {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 10px;
 }
 .insight-card {
@@ -571,7 +582,7 @@ button.secondary { background: #334155; color: #e2e8f0; }
 .swap-board {
   margin: 8px 0 10px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 .swap-card {
   border: 1px solid #2a466e;
@@ -681,6 +692,14 @@ ul { padding-left: 20px; }
   display: grid;
   gap: 8px;
 }
+.list-empty {
+  border: 1px dashed rgba(88, 131, 190, 0.6);
+  border-radius: 10px;
+  padding: 12px 10px;
+  text-align: center;
+  color: #a8bfde;
+  background: linear-gradient(165deg, rgba(11, 24, 51, 0.8), rgba(17, 38, 69, 0.6));
+}
 .list-pill {
   border: 1px solid #2a466e;
   background: linear-gradient(160deg, #0b1936, #0d2345);
@@ -695,7 +714,7 @@ ul { padding-left: 20px; }
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 2px;
 }
 .metric-tile-visual {
   border: 1px solid #335481;
@@ -726,6 +745,18 @@ ul { padding-left: 20px; }
   width: 0;
   transition: width .24s ease;
   background: linear-gradient(90deg, #22d3ee, #a855f7);
+}
+.mini-chart-wrap {
+  border: 1px solid #2f4d78;
+  border-radius: 12px;
+  padding: 10px 12px 8px;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(56, 189, 248, 0.12), transparent 55%),
+    linear-gradient(165deg, #0b1b38, #11284a);
+}
+.mini-chart-wrap canvas {
+  width: 100% !important;
+  height: auto !important;
 }
 .ml-forecast-visual {
   display: grid;
@@ -805,6 +836,7 @@ ul { padding-left: 20px; }
   body::before, body::after { display: none; }
   .dashboard-grid { grid-template-columns: 1fr; }
   .left-column .panel:first-child { position: static; }
+  .analysis-block { min-height: auto; }
   .deck-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tower-troops { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .builder-metrics { grid-template-columns: 1fr; }

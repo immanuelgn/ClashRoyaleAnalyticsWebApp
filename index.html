@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="style.css?v=20260510d" />
+  <link rel="stylesheet" href="style.css?v=20260512a" />
 </head>
 <body>
   <main class="container">
@@ -182,23 +182,34 @@
     </div>
 
     <div class="analysis-mosaic">
-      <section class="panel analysis-block span-12">
-        <h2>Subscores</h2>
+      <section class="panel analysis-block span-6">
+        <h2 class="section-label">Subscores</h2>
+        <p class="analysis-sub">Role balance and deck profile by category.</p>
         <div id="subscoreTiles" class="metric-tiles"></div>
+        <div class="mini-chart-wrap">
+          <canvas id="subscoreMiniChart" height="130"></canvas>
+        </div>
         <ul id="subScoresList"></ul>
-        <h2>Tower Impact</h2>
+      </section>
+
+      <section class="panel analysis-block span-6">
+        <h2 class="section-label">Tower Impact</h2>
+        <p class="analysis-sub">How your selected tower troop supports this build.</p>
         <div id="towerImpactTiles" class="metric-tiles"></div>
+        <div class="mini-chart-wrap">
+          <canvas id="towerImpactMiniChart" height="130"></canvas>
+        </div>
         <ul id="towerImpactList"></ul>
       </section>
 
-      <section class="panel analysis-block span-4">
+      <section class="panel analysis-block span-6">
         <h2 class="section-label">Tower Optimizer</h2>
         <div id="towerOptimizerVisual" class="insight-cards"></div>
         <ul id="towerOptimizerList"></ul>
         <p id="towerOptimizerBest"></p>
       </section>
 
-      <section class="panel analysis-block span-8">
+      <section class="panel analysis-block span-6">
         <h2 class="section-label">Card Swap Planner</h2>
         <div id="deltaVisualStats" class="chip-row"></div>
         <p id="deltaSummary"></p>
@@ -241,6 +252,12 @@
       </section>
 
       <section class="panel analysis-block span-6">
+        <h2 class="section-label">Breakdown Chart</h2>
+        <h2>Breakdown</h2>
+        <canvas id="synergyChart" height="140"></canvas>
+      </section>
+
+      <section class="panel analysis-block span-6">
         <h2 class="section-label">Strengths / Weaknesses / Recommendations</h2>
         <div id="swrVisual" class="swr-visual-grid"></div>
         <h2>Strengths</h2>
@@ -250,17 +267,11 @@
         <h2>Recommendations</h2>
         <ul id="recommendationsList"></ul>
       </section>
-
-      <section class="panel analysis-block span-6">
-        <h2 class="section-label">Breakdown Chart</h2>
-        <h2>Breakdown</h2>
-        <canvas id="synergyChart" height="140"></canvas>
-      </section>
     </div>
   </main>
 
   <script src="config.js?v=20260502f"></script>
-  <script src="script.js?v=20260511a"></script>
+  <script src="script.js?v=20260512a"></script>
 </body>
 </html>
 
