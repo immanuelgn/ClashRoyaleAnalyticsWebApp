@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="style.css?v=20260512c" />
+  <link rel="stylesheet" href="style.css?v=20260512d" />
 </head>
 <body>
   <main class="container">
@@ -226,6 +226,10 @@
           <button id="mlWonBtn" class="feedback-btn good">I Won</button>
           <button id="mlLostBtn" class="feedback-btn bad">I Lost</button>
         </div>
+        <p class="feedback-help">
+          How to log results: Analyze your deck, play a real match, then tap <strong>I Won</strong> or <strong>I Lost</strong> once per game.
+          Add optional match details below to improve ML accuracy faster.
+        </p>
         <div class="feedback-grid">
           <input id="mlOppArchetypeInput" type="text" placeholder="Opponent archetype (optional)" />
           <input id="mlTrophiesInput" type="number" min="0" max="10000" placeholder="Trophies (optional)" />

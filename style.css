@@ -792,6 +792,15 @@ ul { padding-left: 20px; }
   font-weight: 700;
   margin-right: 4px;
 }
+.feedback-help {
+  margin: 2px 0 8px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #bfd7f5;
+}
+.feedback-help strong {
+  color: #e6f2ff;
+}
 .feedback-btn {
   padding: 8px 10px;
   border-radius: 8px;
