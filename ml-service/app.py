@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import joblib
 import numpy as np
@@ -39,19 +39,19 @@ META = {"modelVersion": "untrained"}
 class PredictRequest(BaseModel):
     cardIds: List[int]
     towerTroop: str = "tower_princess"
-    scoreProxy: float | None = None
+    scoreProxy: Optional[float] = None
 
 class FeedbackRequest(BaseModel):
     cardIds: List[int]
     towerTroop: str = "tower_princess"
     won: bool
-    crownsFor: int | None = None
-    crownsAgainst: int | None = None
-    opponentArchetype: str | None = None
-    gameMode: str | None = None
-    trophies: int | None = None
-    patchVersion: str | None = None
-    notes: str | None = None
+    crownsFor: Optional[int] = None
+    crownsAgainst: Optional[int] = None
+    opponentArchetype: Optional[str] = None
+    gameMode: Optional[str] = None
+    trophies: Optional[int] = None
+    patchVersion: Optional[str] = None
+    notes: Optional[str] = None
 
 
 def _fallback_predict(feats: dict) -> float:
@@ -205,6 +205,10 @@ def predict(req: PredictRequest):
         response["mlForecast"]["predictedWinRate"],
         response["mlForecast"]["confidence"],
         req.scoreProxy,
+        response.get("modelVersion"),
+        "python-ml-service",
+        response.get("metaSignals", {}).get("maxSimilarity"),
+        response.get("metaSignals", {}).get("weightedMetaWinRate"),
     )
     return response
 

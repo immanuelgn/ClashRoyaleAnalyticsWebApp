@@ -1,34 +1,56 @@
-# Clash Royale Analytics Web App
+# RoyalePro
 
-Interactive deck analytics platform for Clash Royale with Evo/Hero/Champion-aware deck building, matchup scoring, and ML-assisted card swap suggestions.
+RoyalePro is a Clash Royale deck analysis app I built to answer one practical question:
 
-Live: https://royalepro.vercel.app
+**"If I run this deck in ladder right now, what should I expect and what should I change first?"**
 
-## Highlights
+Live app: https://royalepro.vercel.app
 
-- Drag-and-drop deck builder with current slot rules:
-  - Evo slot
-  - Wild slot (Evo/Hero/Champion)
-  - Hero/Champion slot
-- Card rendering pipeline for normal, Evo, Hero, and Champion variants.
-- Deck analysis output:
-  - archetype + confidence
-  - role balance and sub-scores
-  - weakness profiling
-  - matchup simulation vs meta deck presets
-- Tower troop optimizer integrated into analysis flow.
-- ML integration (Python/FastAPI) for predicted win rate and upgrade candidates.
+## What it does
 
-## Tech Stack
+- Build a deck with current Evo / Hero / Champion slot rules.
+- Run analysis for archetype fit, role balance, matchup risk, and tower troop synergy.
+- Simulate performance against common meta-style presets.
+- Generate ML-assisted swap suggestions with predicted win-rate impact.
+- Capture real match feedback (`I Won` / `I Lost`) to improve future model training.
 
-- Frontend: HTML, CSS, JavaScript (deployed on Vercel)
-- API routes: Node.js serverless functions
-- Core analytics engine: ASP.NET Core (C#)
+## Why this project is interesting
+
+This is not just a UI project. It is a full decision system with multiple services:
+
+- A frontend optimized for quick iteration while deck testing.
+- A deterministic analysis layer for explainable scoring.
+- A separate ML service for prediction and recommendation.
+- A Postgres feedback pipeline for continuous improvement.
+
+The hard part is balancing **explainability** and **predictive quality** without making the output feel like a black box.
+
+## Architecture
+
+- Frontend: HTML, CSS, JavaScript
+- API layer: Node.js serverless routes
+- Rules/analytics backend: ASP.NET Core (C#)
 - ML service: FastAPI + scikit-learn (Python)
-- Data layer for ML experiments: PostgreSQL
+- Data store: PostgreSQL (Supabase)
 
-## Security
+## ML loop (how learning happens)
 
-- Clash Royale API token is **not** stored in this repo.
-- Secrets are injected via environment variables / secret stores.
-- CORS allowlist is enforced for backend endpoints.
+1. User analyzes a deck.
+2. ML service returns predicted win rate + suggestions.
+3. User submits match outcome (`I Won` / `I Lost`) with optional context (crowns, opponent archetype, trophies).
+4. Feedback is stored in Postgres.
+5. Training job uses synthetic + meta-prior + real feedback data to improve the model.
+
+## Engineering focus areas
+
+- Input validation and schema constraints for cleaner training data.
+- Meta-aware feature engineering (deck similarity to known strong lists).
+- Defensive fallbacks when ML service is unavailable.
+- Practical observability via learning status metrics and recent event history.
+
+## Security and operational notes
+
+- No API secrets are committed to the repository.
+- Runtime secrets are injected via environment variables.
+- Database access is isolated behind backend services.
+- Service endpoints are designed to fail safely when dependencies are offline.
