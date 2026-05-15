@@ -84,6 +84,8 @@ function withFlags(card) {
   return {
     ...card,
     iconUrls: { medium: `https://royaleapi.github.io/cr-api-assets/cards/${slug}.png` },
+    heroIconUrl: `https://royaleapi.github.io/cr-api-assets/cards/${slug}-hero.png`,
+    evoIconUrl: `https://royaleapi.github.io/cr-api-assets/cards/${slug}-ev1.png`,
     isEvolution,
     isHero,
     isChampion,

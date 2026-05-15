@@ -62,6 +62,16 @@ const HERO_ART_OVERRIDES = {
   "Balloon": [
     "/assets/hero/balloon-hero-cover.png",
     "assets/hero/balloon-hero-cover.png"
+  ],
+  "Dark Prince": [
+    "/assets/hero/dark-prince-hero-cover.png",
+    "assets/hero/dark-prince-hero-cover.png",
+    "https://cdns3.royaleapi.com/cdn-cgi/image/w=2160,h=2880/static/img/blog/2026-05-season-83/hero-dark-prince/v1-d8e70510/hero-dp-promo-sq34-01.jpg"
+  ],
+  "Bowler": [
+    "/assets/hero/bowler-hero-cover.png",
+    "assets/hero/bowler-hero-cover.png",
+    "https://cdns3.royaleapi.com/cdn-cgi/image/w=2160,h=2880/static/img/blog/2026-05-season-83/hero-bowler/v1-6b57ad72/hero-bowler-promo-sq34-01.jpg"
   ]
 };
 
@@ -442,6 +452,8 @@ function getDisplayImageFallbacks(card, slotType, slotIndex = -1) {
     return list;
   }
   if (slotType === "hero") {
+    push(`/assets/hero/${slug}-hero-cover.png`);
+    push(`assets/hero/${slug}-hero-cover.png`);
     for (const url of (HERO_ART_OVERRIDES[card.name] || [])) push(url);
     push(`${ASSET_VARIANT_BASE}${slug}-hero.png`);
     push(card.heroIconUrl);
@@ -451,6 +463,8 @@ function getDisplayImageFallbacks(card, slotType, slotIndex = -1) {
   if (slotType === "wild") {
     const wildMode = getWildModeForCard(slotIndex, card);
     if (wildMode === "hero") {
+      push(`/assets/hero/${slug}-hero-cover.png`);
+      push(`assets/hero/${slug}-hero-cover.png`);
       for (const url of (HERO_ART_OVERRIDES[card.name] || [])) push(url);
       push(`${ASSET_VARIANT_BASE}${slug}-hero.png`);
       push(card.heroIconUrl);
