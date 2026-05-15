@@ -19,10 +19,38 @@ const EVO_CARD_SLUGS = new Set([
 
 const HERO_CARD_SLUGS = new Set([
   "barbarian-barrel", "giant", "goblins", "ice-golem", "knight",
-  "magic-archer", "mega-minion", "mini-pekka", "musketeer", "wizard", "balloon"
+  "magic-archer", "mega-minion", "mini-pekka", "musketeer", "wizard", "balloon",
+  "dark-prince", "bowler"
 ]);
 
 const EVO_FORCE_OFF_SLUGS = new Set(["the-log"]);
+
+const DEFENSIVE_BUILDING_IDS = new Set([
+  27000000, // Cannon
+  27000002, // Mortar
+  27000003, // Inferno Tower
+  27000004, // Bomb Tower
+  27000006, // Tesla
+  27000008, // X-Bow
+  27000009, // Tombstone
+  27000010, // Barbarian Hut
+  27000011, // Furnace
+  27000012, // Goblin Cage
+  27000013, // Goblin Hut
+  27000014 // Elixir Collector
+]);
+
+function normalizeName(text) {
+  return String(text || "").toLowerCase().replace(/[^\w\s-]/g, " ");
+}
+
+function isDefensiveStructureCard(card, role, name) {
+  const roleIsDefense = ["defense", "building", "spawner"].includes(role);
+  if (roleIsDefense) return true;
+  const id = Number(card?.id || 0);
+  if (DEFENSIVE_BUILDING_IDS.has(id)) return true;
+  return /cannon|tesla|inferno tower|bomb tower|tombstone|x[-\s]?bow|mortar|hut|furnace|collector|elixir collector|goblin cage|spawner|building/.test(name);
+}
 
 function slugify(name) {
   return (name || "")
@@ -64,16 +92,15 @@ function withFlags(card) {
 }
 
 function getMetadata(card) {
-  const name = (card.name || "").toLowerCase();
+  const name = normalizeName(card.name);
   const role = (card.role || "Support").toLowerCase();
   const attackType = (card.attackType || "Ground").toLowerCase();
   const isWinCondition = role === "wincondition" || /hog|giant|golem|balloon|barrel|x-bow|mortar|miner|ram rider|battle ram|goblin drill/.test(name);
-  const roleIsDefense = role === "defense" || role === "building" || role === "spawner";
-  const isBuilding = roleIsDefense || /cannon|tesla|tower|tombstone|x-bow|mortar|hut|furnace|collector|cage|spawner/.test(name);
+  const isBuilding = isDefensiveStructureCard(card, role, name);
   const isLightSpell = /zap|log|snowball|arrows|barbarian barrel|tornado/.test(name);
   const isHeavySpell = /fireball|poison|rocket|lightning/.test(name);
   const isCycleCard = (card.elixirCost || 0) <= 2 || role === "cycle";
-  const canHitAir = attackType === "both" || attackType === "air" || /musketeer|archers|baby dragon|minions|bats|electro wizard|phoenix/.test(name);
+  const canHitAir = attackType === "both" || attackType === "air" || /musketeer|archers|baby dragon|minions|bats|electro wizard|phoenix|dart goblin|spear goblins|hunter|wizard|witch|executioner|magic archer|electro dragon|mega minion|inferno dragon|minion horde|firecracker|zappies|little prince/.test(name);
   const isTank = (card.elixirCost || 0) >= 5 || /giant|golem|pekka|lava hound|electro giant|royal giant/.test(name);
   const isSplash = /wizard|baby dragon|valkyrie|bowler|bomb|executioner|firecracker|witch|poison|fireball|arrows|zap|snowball|rocket|lightning/.test(name);
   const isReset = /zap|electro wizard|electro spirit|zappies/.test(name);
@@ -333,7 +360,7 @@ function analyzeDeck(cardIds, towerTroop) {
   if (airCounters >= 3) { defense += 12; breakdown["Air Defense"] = 12; strengths.push("Reliable anti-air coverage."); }
   else { defense += 5; breakdown["Air Defense"] = 5; weaknesses.push("Air defense may be unreliable."); }
   const buildingCount = metadata.filter(m => m.isBuilding).length;
-  if (buildingCount >= 1) { defense += 10; breakdown["Building Coverage"] = 10; }
+  if (buildingCount >= 1) { defense += 10; breakdown["Building Coverage"] = 10; strengths.push("Defensive building/spawner anchor present."); }
   else { defense += 4; breakdown["Building Coverage"] = 4; weaknesses.push("No defensive building/spawner detected."); }
   const splashCount = metadata.filter(m => m.isSplash).length;
   if (splashCount >= 2) { defense += 8; breakdown["Swarm Control"] = 8; } else { defense += 4; breakdown["Swarm Control"] = 4; }
@@ -375,23 +402,37 @@ function analyzeDeck(cardIds, towerTroop) {
 
   const tt = normalizeTowerTroop(towerTroop);
   const cheapCount = metadata.filter(m => m.isCycleCard).length;
+  const singleTargetPressure = tankCount + winConCount;
   if (tt === "cannoneer") {
-    if (airCounters >= 3) { totalScore += 2; towerImpact["Air Support Synergy"] = 2; }
-    else { totalScore -= 2; towerImpact["Air Support Synergy"] = -2; weaknesses.push("Cannoneer build may struggle without enough anti-air support."); }
-    if (splashCount >= 2) { totalScore += 2; towerImpact["Swarm Cover Synergy"] = 2; }
-    else { totalScore -= 1; towerImpact["Swarm Cover Synergy"] = -1; }
+    if (airCounters >= 3) { totalScore += 2; towerImpact["Anti-Air Cover"] = 2; }
+    else { totalScore -= 2; towerImpact["Anti-Air Cover"] = -2; weaknesses.push("Cannoneer prefers stronger anti-air support."); }
+    if (splashCount >= 2 || lightSpellCount >= 1) { totalScore += 2; towerImpact["Swarm Cover"] = 2; }
+    else { totalScore -= 2; towerImpact["Swarm Cover"] = -2; weaknesses.push("Cannoneer can struggle if swarm cleanup is too light."); }
+    if (buildingCount >= 1) { totalScore += 2; towerImpact["Center-Pull Support"] = 2; }
+    else { totalScore -= 1; towerImpact["Center-Pull Support"] = -1; recommendations.push("Cannoneer works better with a pull building (Tesla/Cannon/Bomb Tower)."); }
+    if (avgElixir <= 4.2) { totalScore += 1; towerImpact["Tempo Recovery"] = 1; }
+    else { totalScore -= 1; towerImpact["Tempo Recovery"] = -1; }
   } else if (tt === "dagger_duchess") {
-    if (cheapCount >= 2) { totalScore += 3; towerImpact["Cycle Tempo Synergy"] = 3; }
-    else { totalScore -= 1; towerImpact["Cycle Tempo Synergy"] = -1; }
+    if (cheapCount >= 2) { totalScore += 2; towerImpact["Burst Tempo"] = 2; }
+    else { totalScore -= 1; towerImpact["Burst Tempo"] = -1; }
+    if (buildingCount >= 1) { totalScore += 2; towerImpact["Tank Pull Support"] = 2; }
+    else { totalScore -= 2; towerImpact["Tank Pull Support"] = -2; recommendations.push("Dagger Duchess benefits from a defensive building to stabilize longer pushes."); }
+    if (singleTargetPressure >= 3 && avgElixir >= 4.1) { totalScore -= 2; towerImpact["Sustained Push Durability"] = -2; }
+    else { totalScore += 1; towerImpact["Sustained Push Durability"] = 1; }
   } else if (tt === "royal_chef") {
     if (tankCount >= 2 && avgElixir >= 3.7) { totalScore += 3; towerImpact["Frontline Synergy"] = 3; }
     else { totalScore -= 3; towerImpact["Frontline Synergy"] = -3; }
+    if (winConCount >= 1 && supportCount >= 3) { totalScore += 1; towerImpact["Carry Support"] = 1; }
   } else if (tt === "tower_princess") {
     if (avgElixir <= 3.3 && winConCount >= 1) {
-      totalScore += 3;
-      towerImpact["Cycle Stability Synergy"] = 3;
+      totalScore += 2;
+      towerImpact["Cycle Stability"] = 2;
     } else {
-      towerImpact["Cycle Stability Synergy"] = 0;
+      towerImpact["Cycle Stability"] = 0;
+    }
+    if (airCounters >= 3 && splashCount >= 2) {
+      totalScore += 1;
+      towerImpact["All-Round Defense"] = 1;
     }
   } else {
     towerImpact.Baseline = 0;

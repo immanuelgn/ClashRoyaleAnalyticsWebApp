@@ -52,7 +52,8 @@ const EVO_CARD_SLUGS = new Set([
 
 const HERO_CARD_SLUGS = new Set([
   "barbarian-barrel", "giant", "goblins", "ice-golem", "knight",
-  "magic-archer", "mega-minion", "mini-pekka", "musketeer", "wizard", "balloon"
+  "magic-archer", "mega-minion", "mini-pekka", "musketeer", "wizard", "balloon",
+  "dark-prince", "bowler"
 ]);
 
 const EVO_FORCE_OFF_SLUGS = new Set(["the-log"]);
@@ -111,6 +112,27 @@ const state = {
   wildSlotModes: {},
   lastPoolSelect: { cardId: null, at: 0 }
 };
+
+const OPP_ARCHETYPE_NORMALIZE = new Map([
+  ["cycle", "cycle"],
+  ["hog cycle", "cycle"],
+  ["beatdown", "beatdown"],
+  ["air beatdown", "air_beatdown"],
+  ["air_beatdown", "air_beatdown"],
+  ["lava", "air_beatdown"],
+  ["lava loon", "air_beatdown"],
+  ["lavaloon", "air_beatdown"],
+  ["bait", "bait"],
+  ["log bait", "bait"],
+  ["control", "control"],
+  ["siege", "siege"],
+  ["bridge spam", "bridge_spam"],
+  ["bridge_spam", "bridge_spam"],
+  ["bridgespam", "bridge_spam"],
+  ["offmeta", "custom_offmeta"],
+  ["custom", "custom_offmeta"],
+  ["custom_offmeta", "custom_offmeta"]
+]);
 
 const deckSlotsEl = document.getElementById("deckSlots");
 const towerTroopsEl = document.getElementById("towerTroops");
@@ -733,7 +755,7 @@ async function submitMlFeedback(won) {
     statusEl.textContent = "Build 8-card deck first, then submit match feedback.";
     return;
   }
-  const oppArchetype = document.getElementById("mlOppArchetypeInput")?.value?.trim() || "";
+  const oppArchetypeRaw = document.getElementById("mlOppArchetypeInput")?.value?.trim() || "";
   const trophiesRaw = document.getElementById("mlTrophiesInput")?.value;
   const crownsForRaw = document.getElementById("mlCrownsForInput")?.value;
   const crownsAgainstRaw = document.getElementById("mlCrownsAgainstInput")?.value;
@@ -749,7 +771,7 @@ async function submitMlFeedback(won) {
       won: !!won,
       crownsFor: Number.isFinite(crownsFor) ? Math.max(0, Math.min(3, crownsFor)) : null,
       crownsAgainst: Number.isFinite(crownsAgainst) ? Math.max(0, Math.min(3, crownsAgainst)) : null,
-      opponentArchetype: oppArchetype || null,
+      opponentArchetype: normalizeOpponentArchetype(oppArchetypeRaw),
       gameMode: "normal_battle",
       trophies: Number.isFinite(trophies) ? Math.max(0, Math.min(10000, trophies)) : null,
       patchVersion: "live"
@@ -761,12 +783,26 @@ async function submitMlFeedback(won) {
     });
     const data = await res.json();
     if (!res.ok || !data?.ok) throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
-    if (line) line.textContent = won ? "Feedback saved: marked as win." : "Feedback saved: marked as loss.";
+    if (line) {
+      line.textContent = won
+        ? "Feedback saved: marked as win. Your Crowns = crowns you took, Opponent Crowns = crowns they took."
+        : "Feedback saved: marked as loss. Your Crowns = crowns you took, Opponent Crowns = crowns they took.";
+    }
     await renderLearningStatus();
   } catch (err) {
     if (line) line.textContent = "Could not submit feedback right now.";
     statusEl.textContent = `Feedback error: ${err.message || "unknown error"}`;
   }
+}
+
+function normalizeOpponentArchetype(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return null;
+  const compact = raw.replace(/\s+/g, " ").replace(/[^\w\s-]/g, "");
+  if (OPP_ARCHETYPE_NORMALIZE.has(compact)) return OPP_ARCHETYPE_NORMALIZE.get(compact);
+  const underscored = compact.replace(/\s+/g, "_");
+  if (OPP_ARCHETYPE_NORMALIZE.has(underscored)) return OPP_ARCHETYPE_NORMALIZE.get(underscored);
+  return "custom_offmeta";
 }
 
 async function analyzePayload(payload) {

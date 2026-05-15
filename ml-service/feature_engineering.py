@@ -10,6 +10,21 @@ ROOT = Path(__file__).resolve().parents[1]
 CARDS_PATH = ROOT / "data" / "cards.json"
 META_DECKS = load_meta_decks()
 
+DEFENSIVE_BUILDING_IDS = {
+    27000000,  # Cannon
+    27000002,  # Mortar
+    27000003,  # Inferno Tower
+    27000004,  # Bomb Tower
+    27000006,  # Tesla
+    27000008,  # X-Bow
+    27000009,  # Tombstone
+    27000010,  # Barbarian Hut
+    27000011,  # Furnace
+    27000012,  # Goblin Cage
+    27000013,  # Goblin Hut
+    27000014,  # Elixir Collector
+}
+
 
 def load_cards() -> List[dict]:
     with open(CARDS_PATH, "r", encoding="utf-8") as f:
@@ -24,21 +39,66 @@ def normalize_tower(tower_troop: str | None) -> str:
 
 
 def card_metadata(card: dict) -> dict:
-    name = (card.get("name") or "").lower()
+    name = ((card.get("name") or "").lower())
     role = (card.get("role") or "support").lower()
     attack_type = (card.get("attackType") or "ground").lower()
+    card_id = int(card.get("id") or 0)
+    is_building = (
+        role in {"defense", "building", "spawner"}
+        or card_id in DEFENSIVE_BUILDING_IDS
+        or any(
+            k in name
+            for k in [
+                "cannon",
+                "tesla",
+                "inferno tower",
+                "bomb tower",
+                "tombstone",
+                "x-bow",
+                "mortar",
+                "hut",
+                "furnace",
+                "collector",
+                "elixir collector",
+                "goblin cage",
+                "spawner",
+                "building",
+            ]
+        )
+    )
     return {
         "is_win_condition": role == "wincondition" or any(
             k in name for k in ["hog", "giant", "golem", "balloon", "barrel", "x-bow", "mortar", "miner", "ram rider", "battle ram", "goblin drill"]
         ),
-        "is_building": role in {"defense", "building", "spawner"} or any(
-            k in name for k in ["cannon", "tesla", "tower", "tombstone", "x-bow", "mortar", "hut", "furnace", "collector", "cage", "spawner"]
-        ),
+        "is_building": is_building,
         "is_light_spell": any(k in name for k in ["zap", "log", "snowball", "arrows", "barbarian barrel", "tornado"]),
         "is_heavy_spell": any(k in name for k in ["fireball", "poison", "rocket", "lightning"]),
         "is_cycle": (card.get("elixirCost") or 0) <= 2 or role == "cycle",
         "can_hit_air": attack_type in {"both", "air"} or any(
-            k in name for k in ["musketeer", "archers", "baby dragon", "minions", "bats", "electro wizard", "phoenix"]
+            k in name
+            for k in [
+                "musketeer",
+                "archers",
+                "baby dragon",
+                "minions",
+                "bats",
+                "electro wizard",
+                "phoenix",
+                "dart goblin",
+                "spear goblins",
+                "hunter",
+                "wizard",
+                "witch",
+                "executioner",
+                "magic archer",
+                "electro dragon",
+                "mega minion",
+                "inferno dragon",
+                "minion horde",
+                "firecracker",
+                "zappies",
+                "little prince",
+            ]
         ),
         "is_tank": (card.get("elixirCost") or 0) >= 5 or any(
             k in name for k in ["giant", "golem", "pekka", "lava hound", "electro giant", "royal giant"]

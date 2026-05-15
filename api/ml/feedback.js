@@ -20,7 +20,7 @@ module.exports = async function handler(req, res) {
     const won = !!body.won;
     const crownsFor = Number.isFinite(Number(body.crownsFor)) ? Number(body.crownsFor) : null;
     const crownsAgainst = Number.isFinite(Number(body.crownsAgainst)) ? Number(body.crownsAgainst) : null;
-    const opponentArchetype = body.opponentArchetype ? String(body.opponentArchetype).trim() : null;
+    const opponentArchetype = normalizeOpponentArchetype(body.opponentArchetype);
     const gameMode = body.gameMode ? String(body.gameMode).trim() : null;
     const trophies = Number.isFinite(Number(body.trophies)) ? Number(body.trophies) : null;
     const patchVersion = body.patchVersion ? String(body.patchVersion).trim() : null;
@@ -65,3 +65,33 @@ module.exports = async function handler(req, res) {
     });
   }
 };
+
+function normalizeOpponentArchetype(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return null;
+  const compact = raw.replace(/\s+/g, " ").replace(/[^\w\s-]/g, "");
+  const map = new Map([
+    ["cycle", "cycle"],
+    ["hog cycle", "cycle"],
+    ["beatdown", "beatdown"],
+    ["air beatdown", "air_beatdown"],
+    ["air_beatdown", "air_beatdown"],
+    ["lava", "air_beatdown"],
+    ["lava loon", "air_beatdown"],
+    ["lavaloon", "air_beatdown"],
+    ["bait", "bait"],
+    ["log bait", "bait"],
+    ["control", "control"],
+    ["siege", "siege"],
+    ["bridge spam", "bridge_spam"],
+    ["bridge_spam", "bridge_spam"],
+    ["bridgespam", "bridge_spam"],
+    ["offmeta", "custom_offmeta"],
+    ["custom", "custom_offmeta"],
+    ["custom_offmeta", "custom_offmeta"],
+  ]);
+  if (map.has(compact)) return map.get(compact);
+  const underscored = compact.replace(/\s+/g, "_");
+  if (map.has(underscored)) return map.get(underscored);
+  return "custom_offmeta";
+}

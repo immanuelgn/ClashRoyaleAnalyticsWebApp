@@ -228,14 +228,24 @@
         </div>
         <p class="feedback-help">
           How to log results: Analyze your deck, play a real match, then tap <strong>I Won</strong> or <strong>I Lost</strong> once per game.
-          Add optional match details below to improve ML accuracy faster.
+          Add optional match details below to improve ML accuracy faster. <strong>Your Crowns</strong> means crowns you took; <strong>Opponent Crowns</strong> means crowns they took.
         </p>
         <div class="feedback-grid">
-          <input id="mlOppArchetypeInput" type="text" placeholder="Opponent archetype (optional)" />
+          <input id="mlOppArchetypeInput" type="text" placeholder="Opponent archetype (optional: cycle, beatdown, bait, siege, control, bridge spam, custom_offmeta)" list="oppArchetypeOptions" />
           <input id="mlTrophiesInput" type="number" min="0" max="10000" placeholder="Trophies (optional)" />
-          <input id="mlCrownsForInput" type="number" min="0" max="3" placeholder="Crowns For" />
-          <input id="mlCrownsAgainstInput" type="number" min="0" max="3" placeholder="Crowns Against" />
+          <input id="mlCrownsForInput" type="number" min="0" max="3" placeholder="Your Crowns (0-3)" />
+          <input id="mlCrownsAgainstInput" type="number" min="0" max="3" placeholder="Opponent Crowns (0-3)" />
         </div>
+        <datalist id="oppArchetypeOptions">
+          <option value="cycle"></option>
+          <option value="beatdown"></option>
+          <option value="bait"></option>
+          <option value="control"></option>
+          <option value="siege"></option>
+          <option value="bridge_spam"></option>
+          <option value="air_beatdown"></option>
+          <option value="custom_offmeta"></option>
+        </datalist>
         <p id="mlFeedbackLine" class="sub"></p>
         <p id="learningStatusLine" class="sub"></p>
         <ul id="mlDriversList"></ul>

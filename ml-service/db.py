@@ -18,6 +18,38 @@ def _database_url() -> str:
 def _conn():
     return psycopg.connect(_database_url(), row_factory=dict_row)
 
+def normalize_opponent_archetype(value: Optional[str]) -> Optional[str]:
+    raw = (value or "").strip().lower()
+    if not raw:
+        return None
+    compact = " ".join(raw.split())
+    mapping = {
+        "cycle": "cycle",
+        "hog cycle": "cycle",
+        "beatdown": "beatdown",
+        "air beatdown": "air_beatdown",
+        "air_beatdown": "air_beatdown",
+        "lava": "air_beatdown",
+        "lava loon": "air_beatdown",
+        "lavaloon": "air_beatdown",
+        "bait": "bait",
+        "log bait": "bait",
+        "control": "control",
+        "siege": "siege",
+        "bridge spam": "bridge_spam",
+        "bridge_spam": "bridge_spam",
+        "bridgespam": "bridge_spam",
+        "offmeta": "custom_offmeta",
+        "custom": "custom_offmeta",
+        "custom_offmeta": "custom_offmeta",
+    }
+    if compact in mapping:
+        return mapping[compact]
+    underscored = compact.replace(" ", "_")
+    if underscored in mapping:
+        return mapping[underscored]
+    return "custom_offmeta"
+
 
 def init_db() -> None:
     with _conn() as conn:
@@ -560,7 +592,7 @@ def add_battle_feedback(
                     1 if won else 0,
                     crowns_for,
                     crowns_against,
-                    (opponent_archetype or "").strip() or None,
+                    normalize_opponent_archetype(opponent_archetype),
                     (game_mode or "").strip() or None,
                     trophies,
                     (patch_version or "").strip() or None,
