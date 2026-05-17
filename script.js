@@ -64,12 +64,12 @@ const HERO_ART_OVERRIDES = {
     "assets/hero/balloon-hero-cover.png"
   ],
   "Dark Prince": [
-    "/assets/hero/dark-prince-hero-cover.png",
-    "assets/hero/dark-prince-hero-cover.png"
+    "/assets/hero/dark-prince-hero-cover.png?v=20260517e",
+    "assets/hero/dark-prince-hero-cover.png?v=20260517e"
   ],
   "Bowler": [
-    "/assets/hero/bowler-hero-cover.png",
-    "assets/hero/bowler-hero-cover.png"
+    "/assets/hero/bowler-hero-cover.png?v=20260517e",
+    "assets/hero/bowler-hero-cover.png?v=20260517e"
   ]
 };
 
