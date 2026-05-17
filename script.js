@@ -64,11 +64,11 @@ const HERO_ART_OVERRIDES = {
     "assets/hero/balloon-hero-cover.png"
   ],
   "Dark Prince": [
-    "https://cdns3.royaleapi.com/cdn-cgi/image/w=2160,h=2880/static/img/blog/2026-05-season-83/hero-dark-prince/v1-d8e70510/hero-dp-a-288-005.jpg",
-    "https://cdns3.royaleapi.com/cdn-cgi/image/w=2160,h=2880/static/img/blog/2026-05-season-83/hero-dark-prince/v1-d8e70510/hero-dp-a-288-003.jpg"
+    "https://cdns3.royaleapi.com/cdn-cgi/image/w=2160,h=2880/static/img/blog/2026-05-season-83/hero-dark-prince/v1-d8e70510/hero-dp-a-288-002.jpg",
+    "https://cdns3.royaleapi.com/cdn-cgi/image/w=2160,h=2880/static/img/blog/2026-05-season-83/hero-dark-prince/v1-d8e70510/hero-dp-a-288-004.jpg"
   ],
   "Bowler": [
-    "https://cdns3.royaleapi.com/cdn-cgi/image/w=2160,h=2880/static/img/blog/2026-05-season-83/hero-bowler/v1-6b57ad72/hero-bowler-a-288-005.jpg",
+    "https://cdns3.royaleapi.com/cdn-cgi/image/w=2160,h=2880/static/img/blog/2026-05-season-83/hero-bowler/v1-6b57ad72/hero-bowler-a-288-002.jpg",
     "https://cdns3.royaleapi.com/cdn-cgi/image/w=2160,h=2880/static/img/blog/2026-05-season-83/hero-bowler/v1-6b57ad72/hero-bowler-a-288-004.jpg"
   ]
 };

@@ -306,6 +306,11 @@ h1, h2 {
   object-position: center;
 }
 
+.deck-slots .card-chip.slot-hero .card-img {
+  object-fit: cover;
+  object-position: center 18%;
+}
+
 .card-fallback {
   font-size: 22px;
   font-weight: 800;
