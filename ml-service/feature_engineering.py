@@ -25,6 +25,12 @@ DEFENSIVE_BUILDING_IDS = {
     27000014,  # Elixir Collector
 }
 
+LIGHT_SPELL_NAMES = {"zap", "the log", "log", "snowball", "arrows", "barbarian barrel", "tornado"}
+HEAVY_SPELL_NAMES = {"fireball", "poison", "rocket", "lightning"}
+
+def normalize_card_name(text: str) -> str:
+    return " ".join(str(text or "").lower().replace(".", "").split())
+
 
 def load_cards() -> List[dict]:
     with open(CARDS_PATH, "r", encoding="utf-8") as f:
@@ -40,6 +46,7 @@ def normalize_tower(tower_troop: str | None) -> str:
 
 def card_metadata(card: dict) -> dict:
     name = ((card.get("name") or "").lower())
+    exact_name = normalize_card_name(card.get("name") or "")
     role = (card.get("role") or "support").lower()
     attack_type = (card.get("attackType") or "ground").lower()
     card_id = int(card.get("id") or 0)
@@ -71,8 +78,8 @@ def card_metadata(card: dict) -> dict:
             k in name for k in ["hog", "giant", "golem", "balloon", "barrel", "x-bow", "mortar", "miner", "ram rider", "battle ram", "goblin drill"]
         ),
         "is_building": is_building,
-        "is_light_spell": any(k in name for k in ["zap", "log", "snowball", "arrows", "barbarian barrel", "tornado"]),
-        "is_heavy_spell": any(k in name for k in ["fireball", "poison", "rocket", "lightning"]),
+        "is_light_spell": exact_name in LIGHT_SPELL_NAMES,
+        "is_heavy_spell": exact_name in HEAVY_SPELL_NAMES,
         "is_cycle": (card.get("elixirCost") or 0) <= 2 or role == "cycle",
         "can_hit_air": attack_type in {"both", "air"} or any(
             k in name

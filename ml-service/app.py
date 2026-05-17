@@ -84,14 +84,45 @@ def build_suggestions(card_ids: List[int], tower_troop: str, baseline: float):
     candidates = [c for c in CARDS if int(c["id"]) not in deck_set][:90]
     _, base_feats, deck_cards = build_feature_vector_from_ids(card_ids, tower_troop, CARD_MAP)
     base_avg = float(base_feats.get("avg_elixir", 3.6))
+    base_building = int(base_feats.get("building_count", 0))
+    base_air = int(base_feats.get("air_counters", 0))
+    base_light_spell = int(base_feats.get("light_spell_count", 0))
+    base_heavy_spell = int(base_feats.get("heavy_spell_count", 0))
+    base_win_con = int(base_feats.get("win_con_count", 0))
+    base_meta_sim = float(base_feats.get("meta_max_similarity", 0.0))
 
     def role_group(card: dict) -> str:
         role = str(card.get("role", "")).lower()
+        name = " ".join(str(card.get("name", "")).lower().replace(".", "").split())
+        is_spell_name = name in {
+            "zap", "the log", "log", "snowball", "arrows", "barbarian barrel", "tornado",
+            "fireball", "poison", "rocket", "lightning", "rage", "freeze", "clone", "mirror",
+            "earthquake", "goblin barrel", "graveyard"
+        }
+        is_defense_name = any(
+            k in name
+            for k in [
+                "cannon",
+                "tesla",
+                "tower",
+                "tombstone",
+                "x-bow",
+                "mortar",
+                "hut",
+                "furnace",
+                "collector",
+                "goblin cage",
+                "bomb tower",
+                "inferno tower",
+            ]
+        )
         if role == "wincondition":
             return "wincon"
-        if role == "spell":
+        if is_spell_name:
             return "spell"
-        if role in {"defense", "building", "spawner"}:
+        if role == "spell" and not is_spell_name:
+            return "support"
+        if role in {"defense", "building", "spawner"} or is_defense_name:
             return "defense"
         if (card.get("elixirCost") or 0) <= 2:
             return "cycle"
@@ -119,6 +150,24 @@ def build_suggestions(card_ids: List[int], tower_troop: str, baseline: float):
                 continue
             wr, next_feats, _ = predict_win_rate(next_ids, tower_troop)
             if abs(float(next_feats.get("avg_elixir", base_avg)) - base_avg) > 0.55:
+                continue
+            next_building = int(next_feats.get("building_count", 0))
+            next_air = int(next_feats.get("air_counters", 0))
+            next_light_spell = int(next_feats.get("light_spell_count", 0))
+            next_heavy_spell = int(next_feats.get("heavy_spell_count", 0))
+            next_win_con = int(next_feats.get("win_con_count", 0))
+            next_meta_sim = float(next_feats.get("meta_max_similarity", 0.0))
+            if base_building >= 1 and next_building < base_building:
+                continue
+            if base_air >= 3 and next_air < max(2, base_air - 1):
+                continue
+            if base_light_spell >= 1 and next_light_spell == 0:
+                continue
+            if base_heavy_spell >= 1 and next_heavy_spell == 0:
+                continue
+            if base_win_con >= 1 and next_win_con == 0:
+                continue
+            if baseline >= 60 and base_meta_sim >= 0.70 and next_meta_sim + 0.08 < base_meta_sim:
                 continue
             delta = round(wr - baseline, 1)
             min_delta = 2.2 if baseline >= 62 else (1.4 if baseline >= 56 else 1.0)

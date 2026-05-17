@@ -140,6 +140,9 @@ h1, h2 {
 }
 .left-column .panel:first-child {
   position: static;
+  min-height: calc(100vh - 140px);
+  display: flex;
+  flex-direction: column;
 }
 .builder-metrics {
   display: grid;
@@ -678,9 +681,11 @@ button.secondary { background: #334155; color: #e2e8f0; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
   gap: 10px;
-  max-height: 44vh;
+  min-height: 58vh;
+  max-height: calc(100vh - 260px);
   overflow: auto;
   padding-right: 4px;
+  align-content: start;
 }
 
 .status { color: var(--muted); min-height: 20px; }
@@ -889,6 +894,10 @@ ul { padding-left: 20px; }
   body::before, body::after { display: none; }
   .dashboard-grid { grid-template-columns: 1fr; }
   .left-column .panel:first-child { position: static; }
+  .left-column .panel:first-child {
+    min-height: auto;
+    display: block;
+  }
   .analysis-block { min-height: auto; }
   .deck-slots { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tower-troops { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -904,6 +913,10 @@ ul { padding-left: 20px; }
   .analysis-mosaic { grid-template-columns: 1fr; }
   .span-12, .span-8, .span-6, .span-4 { grid-column: 1 / -1; }
   .feedback-grid { grid-template-columns: 1fr; }
+  .card-pool {
+    min-height: 44vh;
+    max-height: 52vh;
+  }
 }
 .card-chip.slot-evo .card-img { filter: saturate(1.25) contrast(1.05) drop-shadow(0 0 10px rgba(168,85,247,.45)); }
 .card-chip.slot-hero .card-img { filter: saturate(1.22) contrast(1.08) drop-shadow(0 0 10px rgba(245,158,11,.45)); }

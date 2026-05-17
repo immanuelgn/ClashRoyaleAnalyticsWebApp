@@ -44,6 +44,18 @@ function normalizeName(text) {
   return String(text || "").toLowerCase().replace(/[^\w\s-]/g, " ");
 }
 
+function normalizeCardNameForMatch(text) {
+  return String(text || "").toLowerCase().replace(/\./g, "").replace(/\s+/g, " ").trim();
+}
+
+const LIGHT_SPELL_NAMES = new Set(["zap", "the log", "log", "snowball", "arrows", "barbarian barrel", "tornado"]);
+const HEAVY_SPELL_NAMES = new Set(["fireball", "poison", "rocket", "lightning"]);
+const OTHER_SPELL_NAMES = new Set(["rage", "freeze", "clone", "mirror", "earthquake"]);
+
+function isSpellCardByName(name) {
+  return LIGHT_SPELL_NAMES.has(name) || HEAVY_SPELL_NAMES.has(name) || OTHER_SPELL_NAMES.has(name);
+}
+
 function isDefensiveStructureCard(card, role, name) {
   const roleIsDefense = ["defense", "building", "spawner"].includes(role);
   if (roleIsDefense) return true;
@@ -95,12 +107,13 @@ function withFlags(card) {
 
 function getMetadata(card) {
   const name = normalizeName(card.name);
+  const exactName = normalizeCardNameForMatch(card.name);
   const role = (card.role || "Support").toLowerCase();
   const attackType = (card.attackType || "Ground").toLowerCase();
   const isWinCondition = role === "wincondition" || /hog|giant|golem|balloon|barrel|x-bow|mortar|miner|ram rider|battle ram|goblin drill/.test(name);
   const isBuilding = isDefensiveStructureCard(card, role, name);
-  const isLightSpell = /zap|log|snowball|arrows|barbarian barrel|tornado/.test(name);
-  const isHeavySpell = /fireball|poison|rocket|lightning/.test(name);
+  const isLightSpell = LIGHT_SPELL_NAMES.has(exactName);
+  const isHeavySpell = HEAVY_SPELL_NAMES.has(exactName);
   const isCycleCard = (card.elixirCost || 0) <= 2 || role === "cycle";
   const canHitAir = attackType === "both" || attackType === "air" || /musketeer|archers|baby dragon|minions|bats|electro wizard|phoenix|dart goblin|spear goblins|hunter|wizard|witch|executioner|magic archer|electro dragon|mega minion|inferno dragon|minion horde|firecracker|zappies|little prince/.test(name);
   const isTank = (card.elixirCost || 0) >= 5 || /giant|golem|pekka|lava hound|electro giant|royal giant/.test(name);
@@ -187,7 +200,9 @@ function applyMetaCalibration(cards, archetype, totalScore, strengths, recommend
 function isProtectedMetaShell(cards) {
   const shells = [
     ["hog rider", "musketeer", "cannon", "ice golem", "skeletons", "ice spirit", "fireball", "the log"],
-    ["royal hogs", "archer queen", "earthquake", "royal delivery", "the log", "cannon", "ice spirit", "skeletons"]
+    ["royal hogs", "archer queen", "earthquake", "royal delivery", "the log", "cannon", "ice spirit", "skeletons"],
+    ["pekka", "bandit", "royal ghost", "battle ram", "electro wizard", "poison", "zap", "magic archer"],
+    ["goblin barrel", "princess", "goblin gang", "knight", "rocket", "the log", "inferno tower", "dart goblin"]
   ];
   return shells.some((shell) => hasDeckSignature(cards, shell));
 }
@@ -268,12 +283,20 @@ function suggestMlUpgrades(cards, towerTroop, baselineWinRate) {
   const baseMetadata = cards.map(getMetadata);
   const baseAvg = cards.reduce((s, c) => s + (c.elixirCost || 0), 0) / 8;
   const baseWinConCount = baseMetadata.filter(m => m.isWinCondition).length;
+  const baseBuildingCount = baseMetadata.filter(m => m.isBuilding).length;
+  const baseAirCount = baseMetadata.filter(m => m.canHitAir).length;
+  const baseLightSpellCount = baseMetadata.filter(m => m.isLightSpell).length;
+  const baseHeavySpellCount = baseMetadata.filter(m => m.isHeavySpell).length;
 
   const roleGroup = (card) => {
     const role = String(card?.role || "").toLowerCase();
+    const name = normalizeCardNameForMatch(card?.name || "");
+    const isSpellName = isSpellCardByName(name) || name === "goblin barrel" || name === "graveyard";
+    const isDefenseName = /cannon|tesla|tower|tombstone|x[-\s]?bow|mortar|hut|furnace|collector|goblin cage|bomb tower|inferno tower/.test(name);
     if (role === "wincondition") return "wincon";
-    if (role === "spell") return "spell";
-    if (role === "defense" || role === "building" || role === "spawner") return "defense";
+    if (isSpellName) return "spell";
+    if (role === "spell" && !isSpellName) return "support";
+    if (role === "defense" || role === "building" || role === "spawner" || isDefenseName) return "defense";
     if ((card?.elixirCost || 0) <= 2) return "cycle";
     return "support";
   };
@@ -295,7 +318,15 @@ function suggestMlUpgrades(cards, towerTroop, baselineWinRate) {
       if (nextCards.length !== 8) continue;
       const m = nextCards.map(getMetadata);
       const nextWinConCount = m.filter(x => x.isWinCondition).length;
+      const nextBuildingCount = m.filter(x => x.isBuilding).length;
+      const nextAirCount = m.filter(x => x.canHitAir).length;
+      const nextLightSpellCount = m.filter(x => x.isLightSpell).length;
+      const nextHeavySpellCount = m.filter(x => x.isHeavySpell).length;
       if (Math.abs(nextWinConCount - baseWinConCount) > 1) continue;
+      if (baseBuildingCount >= 1 && nextBuildingCount < baseBuildingCount) continue;
+      if (baseAirCount >= 3 && nextAirCount < Math.max(2, baseAirCount - 1)) continue;
+      if (baseLightSpellCount >= 1 && nextLightSpellCount === 0) continue;
+      if (baseHeavySpellCount >= 1 && nextHeavySpellCount === 0) continue;
       const f = buildMlFeatures(nextCards, m, nextCards.reduce((s, c) => s + (c.elixirCost || 0), 0) / 8, towerTroop);
       if (Math.abs(f.avgElixir - baseAvg) > 0.45) continue;
       if (baseAvg <= 3.1 && f.avgElixir > 3.3) continue;
