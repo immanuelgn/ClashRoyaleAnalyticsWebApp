@@ -674,7 +674,7 @@ function buildCardChip(card, options) {
     ${isPoolCard ? "" : `<span class="variant-pill">${slotLabel}</span>`}
     ${slotType ? getSlotBadge(slotType) : ""}
     <div class="card-img-wrap">
-      <img class="card-img" src="${image || card.iconUrls?.medium || ""}" data-fallbacks="${fallbackData}" data-fallback-index="0" onerror="window.__crNextImageFallback && window.__crNextImageFallback(this)" alt="${escapeHtml(card.name)}" loading="lazy" />
+      <img class="card-img" src="${image || card.iconUrls?.medium || ""}" data-fallbacks="${fallbackData}" data-fallback-index="0" alt="${escapeHtml(card.name)}" loading="lazy" />
     </div>
     <div class="name">${card.name}${isPoolCard ? getPoolSpecialSuffix(card) : ""}</div>
     <div class="meta">${card.elixirCost} Elixir</div>
@@ -685,6 +685,13 @@ function buildCardChip(card, options) {
   if (showRemove && onRemove) {
     chip.addEventListener("dblclick", onRemove);
     chip.title = "Double-click to remove";
+  }
+
+  const imgEl = chip.querySelector(".card-img");
+  if (imgEl) {
+    imgEl.addEventListener("error", () => {
+      if (window.__crNextImageFallback) window.__crNextImageFallback(imgEl);
+    });
   }
 
   if (canToggleWildMode) {
