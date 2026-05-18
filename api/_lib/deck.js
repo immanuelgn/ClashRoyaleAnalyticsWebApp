@@ -27,6 +27,47 @@ const EVO_FORCE_OFF_SLUGS = new Set(["the-log"]);
 const EVO_ICON_OVERRIDES = {
   "minion-horde": "https://cdn.royaleapi.com/static/img/cards-150/minion-horde-ev1.png"
 };
+const EVO_ABILITY_IMPACT = {
+  "barbarians": { cycles: 1, impact: ["tempo", "dps"] },
+  "electro-dragon": { cycles: 1, impact: ["chain-control", "anti-swarm"] },
+  "executioner": { cycles: 1, impact: ["close-control", "knockback"] },
+  "goblin-cage": { cycles: 1, impact: ["pull-control", "defense"] },
+  "goblin-giant": { cycles: 1, impact: ["counterpush", "pressure"] },
+  "mega-knight": { cycles: 1, impact: ["knockback", "lane-pressure"] },
+  "minion-horde": { cycles: 1, impact: ["survivability", "burst"] },
+  "pekka": { cycles: 1, impact: ["sustain", "duel-power"] },
+  "royal-giant": { cycles: 1, impact: ["siege-pressure", "knockback"] },
+  "royal-recruits": { cycles: 1, impact: ["bridge-pressure", "shield-convert"] },
+  "witch": { cycles: 1, impact: ["sustain", "swarm-value"] },
+  "wizard": { cycles: 1, impact: ["shield-value", "splash-control"] },
+  "archers": { cycles: 2, impact: ["range", "pierce"] },
+  "baby-dragon": { cycles: 2, impact: ["aura-control", "tempo"] },
+  "bats": { cycles: 2, impact: ["self-heal", "dps"] },
+  "battle-ram": { cycles: 2, impact: ["chain-pressure", "knockback"] },
+  "bomber": { cycles: 2, impact: ["bounce-splash", "swarm-clear"] },
+  "dart-goblin": { cycles: 2, impact: ["poison-dot", "chip"] },
+  "firecracker": { cycles: 2, impact: ["dot", "slow-control"] },
+  "hunter": { cycles: 2, impact: ["grounding", "single-target-lock"] },
+  "ice-spirit": { cycles: 2, impact: ["freeze-control", "cycle"] },
+  "knight": { cycles: 2, impact: ["move-mitigation", "tankiness"] },
+  "lumberjack": { cycles: 2, impact: ["rage-uptime", "death-value"] },
+  "musketeer": { cycles: 2, impact: ["sniper-range", "pickoff"] },
+  "royal-ghost": { cycles: 2, impact: ["invis-pressure", "spawn-value"] },
+  "royal-hogs": { cycles: 2, impact: ["air-path", "landing-burst"] },
+  "skeleton-army": { cycles: 2, impact: ["protection", "swarm-retention"] },
+  "skeleton-barrel": { cycles: 2, impact: ["double-barrel", "split-pressure"] },
+  "skeletons": { cycles: 2, impact: ["clone-growth", "cycle"] },
+  "valkyrie": { cycles: 2, impact: ["pull-control", "splash"] },
+  "wall-breakers": { cycles: 2, impact: ["repeat-pressure", "multi-hit"] },
+  "cannon": { cycles: 2, impact: ["spawn-splash", "defense"] },
+  "furnace": { cycles: 2, impact: ["spawn-rate", "lane-chip"] },
+  "giant-snowball": { cycles: 2, impact: ["roll-control", "pull"] },
+  "goblin-barrel": { cycles: 2, impact: ["mindgame", "pressure"] },
+  "goblin-drill": { cycles: 2, impact: ["reburrow-cycle", "pressure"] },
+  "mortar": { cycles: 2, impact: ["siege-plus-spawn", "pressure"] },
+  "tesla": { cycles: 2, impact: ["stun-pulse", "defense"] },
+  "zap": { cycles: 2, impact: ["double-reset", "stun-control"] }
+};
 
 const DEFENSIVE_BUILDING_IDS = new Set([
   27000000, // Cannon
@@ -106,6 +147,35 @@ function withFlags(card) {
     isChampion,
     allowedSlots
   };
+}
+
+function getEvoAbilityProfile(card) {
+  const slug = slugify(card?.name || "");
+  return EVO_ABILITY_IMPACT[slug] || null;
+}
+
+function computeEvolutionAbilityValue(cards, wildSlotMode) {
+  const wildMode = String(wildSlotMode || "").toLowerCase();
+  let total = 0;
+  const active = [];
+  const slotCards = [
+    { index: 0, card: cards[0], slot: "evo" },
+    { index: 1, card: cards[1], slot: "wild" }
+  ];
+
+  slotCards.forEach(({ card, slot }) => {
+    if (!card) return;
+    const profile = getEvoAbilityProfile(card);
+    if (!profile) return;
+    if (slot === "wild" && wildMode === "hero") return;
+    const base = profile.cycles === 1 ? 3 : 2;
+    const controlBonus = profile.impact.some((k) => /control|reset|pull|knockback/.test(k)) ? 1 : 0;
+    const value = base + controlBonus;
+    total += value;
+    active.push(`${card.name} (${profile.cycles}-cycle)`);
+  });
+
+  return { value: total, active };
 }
 
 function getMetadata(card) {
@@ -349,7 +419,7 @@ function suggestMlUpgrades(cards, towerTroop, baselineWinRate) {
   return out.sort((a, b) => b.deltaWinRate - a.deltaWinRate).slice(0, 3);
 }
 
-function analyzeDeck(cardIds, towerTroop) {
+function analyzeDeck(cardIds, towerTroop, wildSlotMode) {
   const unique = [...new Set(cardIds || [])];
   if (unique.length !== 8) {
     return { error: "Deck must contain 8 unique card IDs." };
@@ -428,13 +498,19 @@ function analyzeDeck(cardIds, towerTroop) {
   if (new Set(cards.map(c => c.name.toLowerCase())).size === cards.length) { consistency += 7; breakdown["Card Uniqueness"] = 7; }
   else { breakdown["Card Uniqueness"] = 0; weaknesses.push("Duplicate cards detected."); }
 
+  const evoAbility = computeEvolutionAbilityValue(cards, wildSlotMode);
+  if (evoAbility.value > 0) {
+    breakdown["Evolution Ability Value"] = evoAbility.value;
+    strengths.push(`Evolution power online: ${evoAbility.active.join(", ")}.`);
+  }
+
   subScores.Offense = offense;
   subScores.Defense = defense;
   subScores.Spells = spells;
   subScores.Cycle = cycle;
   subScores.Consistency = consistency;
 
-  let totalScore = offense + defense + spells + cycle + consistency;
+  let totalScore = offense + defense + spells + cycle + consistency + evoAbility.value;
 
   const tt = normalizeTowerTroop(towerTroop);
   const cheapCount = metadata.filter(m => m.isCycleCard).length;

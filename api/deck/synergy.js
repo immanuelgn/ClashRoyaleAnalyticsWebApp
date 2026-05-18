@@ -32,8 +32,9 @@ module.exports = async function handler(req, res) {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     const cardIds = Array.isArray(body.cardIds) ? body.cardIds.map(Number) : [];
     const towerTroop = body.towerTroop || "tower_princess";
+    const wildSlotMode = body.wildSlotMode || null;
 
-    const result = analyzeDeck(cardIds, towerTroop);
+    const result = analyzeDeck(cardIds, towerTroop, wildSlotMode);
     if (result.error) return res.status(400).json({ error: result.error });
 
     const ml = await getMlPrediction(cardIds, towerTroop, result.score);

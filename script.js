@@ -79,6 +79,165 @@ const EVO_ART_OVERRIDES = {
   ]
 };
 
+const EVO_ABILITY_INFO = {
+  "barbarians": {
+    cycles: 1,
+    effects: ["Gain Rage-like boosts after attacking.", "Increased attack speed.", "Increased movement speed."]
+  },
+  "electro-dragon": {
+    cycles: 1,
+    effects: ["Lightning chains continuously between nearby enemies.", "Longer chain potential than normal Electro Dragon."]
+  },
+  "executioner": {
+    cycles: 1,
+    effects: ["Deals bonus damage at close range.", "Close-range attacks apply knockback."]
+  },
+  "goblin-cage": {
+    cycles: 1,
+    effects: ["Pulls a nearby ground troop toward the cage.", "Trapped troop is attacked by the Brawler."]
+  },
+  "goblin-giant": {
+    cycles: 1,
+    effects: ["Spawns Goblins after dropping below a health threshold."]
+  },
+  "mega-knight": {
+    cycles: 1,
+    effects: ["Punches launch enemies forward.", "Can throw troops toward enemy tower."]
+  },
+  "minion-horde": {
+    cycles: 1,
+    effects: ["First hit grants temporary invisibility/protection effect."]
+  },
+  "pekka": {
+    cycles: 1,
+    effects: ["Heals after getting kills.", "Can temporarily overheal."]
+  },
+  "royal-giant": {
+    cycles: 1,
+    effects: ["Cannon shots create damaging shockwaves.", "Shockwaves apply knockback."]
+  },
+  "royal-recruits": {
+    cycles: 1,
+    effects: ["Gain charge attacks after shields break."]
+  },
+  "witch": {
+    cycles: 1,
+    effects: ["Heals when nearby Skeletons die."]
+  },
+  "wizard": {
+    cycles: 1,
+    effects: ["Shield explodes when broken.", "Explosion deals splash damage and applies knockback."]
+  },
+  "archers": {
+    cycles: 2,
+    effects: ["Periodically fire charged long-range arrows.", "Charged arrows have increased range, higher damage, and pierce enemies."]
+  },
+  "baby-dragon": {
+    cycles: 2,
+    effects: ["Creates a wind field while attacking.", "Wind field speeds up allies and slows enemies."]
+  },
+  "bats": {
+    cycles: 2,
+    effects: ["Heal themselves when attacking.", "Can temporarily overheal beyond base HP."]
+  },
+  "battle-ram": {
+    cycles: 2,
+    effects: ["Ram repeatedly hits and knocks back enemies while alive.", "Chains charge hits and spawns evolved Barbarians after destruction."]
+  },
+  "bomber": {
+    cycles: 2,
+    effects: ["Bomb bounces after the first explosion.", "Can damage secondary targets/groups."]
+  },
+  "dart-goblin": {
+    cycles: 2,
+    effects: ["Attacks apply poison damage over time.", "Poison effect stacks with repeated hits."]
+  },
+  "firecracker": {
+    cycles: 2,
+    effects: ["Rockets leave sparks on impact.", "Sparks deal damage over time and slow enemies."]
+  },
+  "hunter": {
+    cycles: 2,
+    effects: ["Nets the closest enemy.", "Grounded effect temporarily removes flying from air troops."]
+  },
+  "ice-spirit": {
+    cycles: 2,
+    effects: ["Applies an initial freeze.", "Applies a delayed secondary freeze."]
+  },
+  "knight": {
+    cycles: 2,
+    effects: ["Takes reduced damage while moving."]
+  },
+  "lumberjack": {
+    cycles: 2,
+    effects: ["After death, Rage remains active.", "A spirit version continues fighting temporarily."]
+  },
+  "musketeer": {
+    cycles: 2,
+    effects: ["Periodically fires powerful long-range sniper shots."]
+  },
+  "royal-ghost": {
+    cycles: 2,
+    effects: ["Spawns ghost soldiers while invisible."]
+  },
+  "royal-hogs": {
+    cycles: 2,
+    effects: ["Hogs temporarily fly.", "They crash down with landing damage."]
+  },
+  "skeleton-army": {
+    cycles: 2,
+    effects: ["Skeleton General protects the Skeleton Army.", "Skeletons stay protected while the General is alive."]
+  },
+  "skeleton-barrel": {
+    cycles: 2,
+    effects: ["Drops two barrels instead of one.", "Both barrels spawn Skeletons."]
+  },
+  "skeletons": {
+    cycles: 2,
+    effects: ["Each successful hit spawns another Skeleton.", "Maximum of 8 cloned Skeletons can exist at once."]
+  },
+  "valkyrie": {
+    cycles: 2,
+    effects: ["Spin attacks pull enemies inward."]
+  },
+  "wall-breakers": {
+    cycles: 2,
+    effects: ["Continue moving after first explosion.", "Can explode multiple times."]
+  },
+  "cannon": {
+    cycles: 2,
+    effects: ["Drops bombs around itself when deployed.", "Deals area damage on spawn."]
+  },
+  "furnace": {
+    cycles: 2,
+    effects: ["Spawns Fire Spirits faster than normal Furnace."]
+  },
+  "giant-snowball": {
+    cycles: 2,
+    effects: ["Snowball rolls forward instead of normal knockback.", "Pulls enemies inward while moving."]
+  },
+  "goblin-barrel": {
+    cycles: 2,
+    effects: ["Throws one real barrel and one fake barrel."]
+  },
+  "goblin-drill": {
+    cycles: 2,
+    effects: ["Reburrows after the initial attack.", "Reappears for another attack cycle."]
+  },
+  "mortar": {
+    cycles: 2,
+    effects: ["Mortar shells spawn Goblins on impact."]
+  },
+  "tesla": {
+    cycles: 2,
+    effects: ["Emits electric stun pulses when surfacing/deploying."]
+  },
+  "zap": {
+    cycles: 2,
+    effects: ["Hits once initially, then adds one extra electric pulse.", "Total of 2 hits with multiple stun/reset activations."]
+  }
+};
+
 const SLOT_RULES = [
   { id: 0, type: "evo", label: "Slot 1 - Evo Only" },
   { id: 1, type: "wild", label: "Slot 2 - Wild (Evo/Hero/Champion)" },
@@ -392,6 +551,9 @@ function buildCardChip(card, options) {
   const hasHeroMode = isHeroOrChampion(card);
   const canToggleWildMode = slotRuleType === "wild" && showRemove && (hasEvoMode || hasHeroMode);
   const currentWildMode = canToggleWildMode ? getWildModeForCard(slotIndex, card) : "";
+  const visualMode = slotType ? getVisualMode(card, slotType, slotIndex) : null;
+  const modeLabel = slotType ? getModeLabel(slotType, slotRuleType, card) : "";
+  const evoInfo = visualMode === "evo" ? getEvoAbilityInfo(card) : null;
   chip.innerHTML = `
     ${isPoolCard ? "" : `<span class="variant-pill">${slotLabel}</span>`}
     ${slotType ? getSlotBadge(slotType) : ""}
@@ -400,7 +562,7 @@ function buildCardChip(card, options) {
     </div>
     <div class="name">${card.name}${isPoolCard ? getPoolSpecialSuffix(card) : ""}</div>
     <div class="meta">${card.elixirCost} Elixir</div>
-    ${slotType ? `<div class="mode-line ${slotType}">${getModeLabel(slotType, slotRuleType, card)}</div>` : ""}
+    ${slotType ? `<div class="mode-row"><div class="mode-line ${slotType}">${modeLabel}</div>${evoInfo ? '<button type="button" class="mode-info-btn" title="Show Evolution ability details">INFO</button>' : ""}</div>` : ""}
     ${canToggleWildMode ? `<div class="mode-switch"><button type="button" class="mode-opt ${currentWildMode === "evo" ? "active" : ""}" data-mode="evo" ${hasEvoMode ? "" : "disabled"}>EVO</button><button type="button" class="mode-opt ${currentWildMode === "hero" ? "active" : ""}" data-mode="hero" ${hasHeroMode ? "" : "disabled"}>HERO</button></div>` : ""}
   `;
 
@@ -426,6 +588,13 @@ function buildCardChip(card, options) {
         }
         renderSlots();
       });
+    });
+  }
+
+  if (evoInfo) {
+    chip.querySelector(".mode-info-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openEvoInfoModal(card);
     });
   }
 
@@ -528,6 +697,69 @@ function getModeLabel(slotType, slotRuleType, card = null) {
   if (slotType === "evo") return "EVO MODE";
   if (slotType === "hero") return champ ? "CHAMP MODE" : "HERO MODE";
   return "";
+}
+
+function getEvoAbilityInfo(card) {
+  const slug = toCardSlug(card?.name || "");
+  return EVO_ABILITY_INFO[slug] || null;
+}
+
+function ensureEvoInfoModal() {
+  let modal = document.getElementById("evoInfoModal");
+  if (modal) return modal;
+
+  modal = document.createElement("div");
+  modal.id = "evoInfoModal";
+  modal.className = "evo-modal hidden";
+  modal.innerHTML = `
+    <div class="evo-modal-card" role="dialog" aria-modal="true" aria-labelledby="evoInfoTitle">
+      <button type="button" class="evo-modal-close" aria-label="Close evolution details">Close</button>
+      <h3 id="evoInfoTitle"></h3>
+      <p id="evoInfoCycle" class="evo-modal-cycle"></p>
+      <ul id="evoInfoList" class="evo-modal-list"></ul>
+    </div>
+  `;
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeEvoInfoModal();
+  });
+
+  modal.querySelector(".evo-modal-close")?.addEventListener("click", closeEvoInfoModal);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeEvoInfoModal();
+  });
+
+  document.body.appendChild(modal);
+  return modal;
+}
+
+function openEvoInfoModal(card) {
+  const info = getEvoAbilityInfo(card);
+  if (!info) return;
+
+  const modal = ensureEvoInfoModal();
+  const title = modal.querySelector("#evoInfoTitle");
+  const cycle = modal.querySelector("#evoInfoCycle");
+  const list = modal.querySelector("#evoInfoList");
+  if (!title || !cycle || !list) return;
+
+  title.textContent = `${card.name} Evolution`;
+  cycle.textContent = `${info.cycles}-Cycle Evolution`;
+  list.innerHTML = "";
+  (info.effects || []).forEach((line) => {
+    const li = document.createElement("li");
+    li.textContent = line;
+    list.appendChild(li);
+  });
+
+  modal.classList.remove("hidden");
+}
+
+function closeEvoInfoModal() {
+  const modal = document.getElementById("evoInfoModal");
+  if (!modal) return;
+  modal.classList.add("hidden");
 }
 
 function handleDropOnSlot(targetSlotIndex) {
@@ -733,7 +965,9 @@ async function analyzeDeck() {
   if (cards.length !== 8) return statusEl.textContent = "Deck must contain all 8 cards before analysis.";
   try {
     statusEl.textContent = "Analyzing deck...";
-    const data = await analyzePayload({ cardIds: cards.map((c) => c.id), towerTroop: state.selectedTowerTroop });
+    const wildSlotCard = state.deck[1];
+    const wildSlotMode = wildSlotCard ? getWildModeForCard(1, wildSlotCard) : null;
+    const data = await analyzePayload({ cardIds: cards.map((c) => c.id), towerTroop: state.selectedTowerTroop, wildSlotMode });
     state.latestAnalysis = data;
     renderAllAnalysis(data);
     await renderLearningStatus();
