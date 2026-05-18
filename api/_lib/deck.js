@@ -69,6 +69,22 @@ const EVO_ABILITY_IMPACT = {
   "zap": { cycles: 2, impact: ["double-reset", "stun-control"] }
 };
 
+const HERO_ABILITY_IMPACT = {
+  "mini-pekka": { cost: 1, impact: ["stat-spike", "duel-power"] },
+  "wizard": { cost: 1, impact: ["evasion", "aoe-control"] },
+  "barbarian-barrel": { cost: 1, impact: ["lane-pressure", "self-sustain"] },
+  "goblins": { cost: 1, impact: ["reinforcement", "swarm-pressure"] },
+  "magic-archer": { cost: 2, impact: ["reposition", "burst-pierce"] },
+  "knight": { cost: 2, impact: ["taunt-control", "survivability"] },
+  "giant": { cost: 2, impact: ["displacement", "impact-burst"] },
+  "ice-golem": { cost: 2, impact: ["slow-control", "freeze-control"] },
+  "mega-minion": { cost: 2, impact: ["teleport-pickoff", "aoe-burst"] },
+  "balloon": { cost: 2, impact: ["assist-pressure", "defender-punish"] },
+  "bowler": { cost: 2, impact: ["range-spike", "lane-control"] },
+  "musketeer": { cost: 3, impact: ["turret-support", "dual-target-defense"] },
+  "dark-prince": { cost: 3, impact: ["split-entity", "aoe-smash"] }
+};
+
 const DEFENSIVE_BUILDING_IDS = new Set([
   27000000, // Cannon
   27000002, // Mortar
@@ -173,6 +189,45 @@ function computeEvolutionAbilityValue(cards, wildSlotMode) {
     const value = base + controlBonus;
     total += value;
     active.push(`${card.name} (${profile.cycles}-cycle)`);
+  });
+
+  return { value: total, active };
+}
+
+function getHeroAbilityProfile(card) {
+  const slug = slugify(card?.name || "");
+  return HERO_ABILITY_IMPACT[slug] || null;
+}
+
+function computeHeroAbilityValue(cards, wildSlotMode) {
+  const wildMode = String(wildSlotMode || "").toLowerCase();
+  let total = 0;
+  const active = [];
+  const slotCards = [
+    { card: cards[1], slot: "wild" },
+    { card: cards[2], slot: "hero" }
+  ];
+
+  slotCards.forEach(({ card, slot }) => {
+    if (!card) return;
+    if (slot === "wild" && wildMode !== "hero") return;
+    const slug = slugify(card?.name || "");
+    const isHero = HERO_CARD_SLUGS.has(slug);
+    const isChampion = (card?.rarity || "").toLowerCase() === "champion";
+    if (!(isHero || isChampion)) return;
+    const profile = getHeroAbilityProfile(card);
+    if (!profile) {
+      if (isChampion) {
+        total += 2;
+        active.push(`${card.name} (champion active)`);
+      }
+      return;
+    }
+    const base = profile.cost <= 1 ? 3 : profile.cost === 2 ? 4 : 5;
+    const controlBonus = profile.impact.some((k) => /control|taunt|freeze|displacement|reposition/.test(k)) ? 1 : 0;
+    const value = base + controlBonus;
+    total += value;
+    active.push(`${card.name} (${profile.cost}-elixir)`);
   });
 
   return { value: total, active };
@@ -503,6 +558,11 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode) {
     breakdown["Evolution Ability Value"] = evoAbility.value;
     strengths.push(`Evolution power online: ${evoAbility.active.join(", ")}.`);
   }
+  const heroAbility = computeHeroAbilityValue(cards, wildSlotMode);
+  if (heroAbility.value > 0) {
+    breakdown["Hero/Champ Ability Value"] = heroAbility.value;
+    strengths.push(`Hero/Champion abilities online: ${heroAbility.active.join(", ")}.`);
+  }
 
   subScores.Offense = offense;
   subScores.Defense = defense;
@@ -510,7 +570,7 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode) {
   subScores.Cycle = cycle;
   subScores.Consistency = consistency;
 
-  let totalScore = offense + defense + spells + cycle + consistency + evoAbility.value;
+  let totalScore = offense + defense + spells + cycle + consistency + evoAbility.value + heroAbility.value;
 
   const tt = normalizeTowerTroop(towerTroop);
   const cheapCount = metadata.filter(m => m.isCycleCard).length;

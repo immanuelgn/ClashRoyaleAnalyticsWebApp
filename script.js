@@ -238,6 +238,117 @@ const EVO_ABILITY_INFO = {
   }
 };
 
+const HERO_ABILITY_INFO = {
+  "mini-pekka": {
+    cost: 1,
+    ability: "Breakfast Boost",
+    effects: ["Cooks pancakes while on the field (charges with every hit).", "Activating consumes pancakes to instantly level up mid-fight with major stat boosts (one-time use)."]
+  },
+  "wizard": {
+    cost: 1,
+    ability: "Fiery Flight",
+    effects: ["Launches into the air to avoid ground melee attacks.", "Summons fire tornadoes that deal continuous area damage below."]
+  },
+  "barbarian-barrel": {
+    cost: 1,
+    ability: "Rowdy Reroll",
+    effects: ["After barrel break, deploys a second barrel down the lane.", "Heals the Barbarian and deals new trample damage (one-time use)."]
+  },
+  "goblins": {
+    cost: 1,
+    ability: "Banner Brigade",
+    effects: ["When only one Goblin remains, activates a battle banner.", "Immediately calls a fresh wave of Goblin reinforcements."]
+  },
+  "magic-archer": {
+    cost: 2,
+    ability: "Triple Threat",
+    effects: ["Dashes backward out of danger while projecting a decoy clone.", "Next attack fires a heavy triple-arrow spread."]
+  },
+  "knight": {
+    cost: 2,
+    ability: "Triumphant Taunt",
+    effects: ["Gains a defensive shield.", "Forces nearby enemies to retarget and focus him."]
+  },
+  "giant": {
+    cost: 2,
+    ability: "Heroic Hurl",
+    effects: ["Grabs the highest-HP nearby enemy unit.", "Throws it backward and deals heavy impact damage."]
+  },
+  "ice-golem": {
+    cost: 2,
+    ability: "Snowstorm",
+    effects: ["Creates a blizzard centered on himself.", "Continuously slows and damages enemies before freezing them."]
+  },
+  "mega-minion": {
+    cost: 2,
+    ability: "Wounding Warp",
+    effects: ["Teleports to the lowest-HP nearby enemy unit.", "Deals heavy AoE burst damage on arrival."]
+  },
+  "balloon": {
+    cost: 2,
+    ability: "Coffin Cadet",
+    effects: ["Spawns a flying Skeletrooper from the basket.", "Skeletrooper dives into nearest defender for heavy crash damage."]
+  },
+  "bowler": {
+    cost: 2,
+    ability: "Stone Swish",
+    effects: ["Roots in place and launches high-powered boulders.", "Boulders travel with amplified long range."]
+  },
+  "musketeer": {
+    cost: 3,
+    ability: "Trusty Turret",
+    effects: ["Drops a fast-firing automated defense turret.", "Turret tanks and attacks both air and ground targets."]
+  },
+  "dark-prince": {
+    cost: 3,
+    ability: "Destructive Dismount",
+    effects: ["Leaps off mount with heavy AoE smash and keeps fighting on foot.", "Rhino mount continues as a separate building-targeting charger."]
+  }
+};
+
+const CHAMPION_ABILITY_INFO = {
+  "mighty-miner": {
+    cost: 2,
+    ability: "Bomb Rush",
+    effects: ["Switches lanes and drops a timed bomb at the original spot.", "High swing value for defense-to-counterpush transitions."]
+  },
+  "skeleton-king": {
+    cost: 2,
+    ability: "Soul Summon",
+    effects: ["Consumes nearby souls to summon a Skeleton swarm.", "Best value after heavy trades and swarm clears."]
+  },
+  "archer-queen": {
+    cost: 1,
+    ability: "Cloaking Cape",
+    effects: ["Turns invisible and boosts attack speed for a short duration.", "Strong pickoff window versus tanks and support units."]
+  },
+  "golden-knight": {
+    cost: 1,
+    ability: "Dashing Dash",
+    effects: ["Chains dashes through multiple nearby targets.", "Converts lane pressure quickly when pathing is open."]
+  },
+  "monk": {
+    cost: 1,
+    ability: "Pensive Protection",
+    effects: ["Enters a defensive stance and reflects many incoming projectiles.", "Great for denying spell and ranged burst timing."]
+  },
+  "little-prince": {
+    cost: 3,
+    ability: "Guardian Assist",
+    effects: ["Calls in the Guardian to protect and pressure immediately.", "Adds burst frontline value on demand."]
+  },
+  "goblinstein": {
+    cost: null,
+    ability: "Champion Active Ability",
+    effects: ["Champion mode is active for this card.", "Ability details vary by patch; verify exact live values in-game."]
+  },
+  "boss-bandit": {
+    cost: null,
+    ability: "Champion Active Ability",
+    effects: ["Champion mode is active for this card.", "Ability details vary by patch; verify exact live values in-game."]
+  }
+};
+
 const SLOT_RULES = [
   { id: 0, type: "evo", label: "Slot 1 - Evo Only" },
   { id: 1, type: "wild", label: "Slot 2 - Wild (Evo/Hero/Champion)" },
@@ -553,7 +664,12 @@ function buildCardChip(card, options) {
   const currentWildMode = canToggleWildMode ? getWildModeForCard(slotIndex, card) : "";
   const visualMode = slotType ? getVisualMode(card, slotType, slotIndex) : null;
   const modeLabel = slotType ? getModeLabel(slotType, slotRuleType, card) : "";
-  const evoInfo = visualMode === "evo" ? getEvoAbilityInfo(card) : null;
+  const modeInfo = slotType ? getCardModeInfo(card, visualMode) : null;
+  const infoTitle = modeInfo?.kind === "evo"
+    ? "Show Evolution ability details"
+    : modeInfo?.kind === "hero"
+      ? "Show Hero ability details"
+      : "Show Champion ability details";
   chip.innerHTML = `
     ${isPoolCard ? "" : `<span class="variant-pill">${slotLabel}</span>`}
     ${slotType ? getSlotBadge(slotType) : ""}
@@ -562,7 +678,7 @@ function buildCardChip(card, options) {
     </div>
     <div class="name">${card.name}${isPoolCard ? getPoolSpecialSuffix(card) : ""}</div>
     <div class="meta">${card.elixirCost} Elixir</div>
-    ${slotType ? `<div class="mode-row"><div class="mode-line ${slotType}">${modeLabel}</div>${evoInfo ? '<button type="button" class="mode-info-btn" title="Show Evolution ability details">INFO</button>' : ""}</div>` : ""}
+    ${slotType ? `<div class="mode-row"><div class="mode-line ${slotType}">${modeLabel}</div>${modeInfo ? `<button type="button" class="mode-info-btn" title="${escapeHtml(infoTitle)}">INFO</button>` : ""}</div>` : ""}
     ${canToggleWildMode ? `<div class="mode-switch"><button type="button" class="mode-opt ${currentWildMode === "evo" ? "active" : ""}" data-mode="evo" ${hasEvoMode ? "" : "disabled"}>EVO</button><button type="button" class="mode-opt ${currentWildMode === "hero" ? "active" : ""}" data-mode="hero" ${hasHeroMode ? "" : "disabled"}>HERO</button></div>` : ""}
   `;
 
@@ -591,10 +707,10 @@ function buildCardChip(card, options) {
     });
   }
 
-  if (evoInfo) {
+  if (modeInfo) {
     chip.querySelector(".mode-info-btn")?.addEventListener("click", (e) => {
       e.stopPropagation();
-      openEvoInfoModal(card);
+      openCardModeInfoModal(card, modeInfo);
     });
   }
 
@@ -704,6 +820,58 @@ function getEvoAbilityInfo(card) {
   return EVO_ABILITY_INFO[slug] || null;
 }
 
+function getHeroAbilityInfo(card) {
+  const slug = toCardSlug(card?.name || "");
+  return HERO_ABILITY_INFO[slug] || null;
+}
+
+function getChampionAbilityInfo(card) {
+  if (!card?.isChampion) return null;
+  const slug = toCardSlug(card?.name || "");
+  return CHAMPION_ABILITY_INFO[slug] || {
+    cost: null,
+    ability: "Champion Active Ability",
+    effects: ["Champion mode is active for this card.", "Ability details vary by patch; verify exact live values in-game."]
+  };
+}
+
+function getCardModeInfo(card, visualMode) {
+  if (visualMode === "evo") {
+    const evo = getEvoAbilityInfo(card);
+    if (!evo) return null;
+    return {
+      kind: "evo",
+      title: `${card.name} Evolution`,
+      subtitle: `${evo.cycles}-Cycle Evolution`,
+      effects: evo.effects || []
+    };
+  }
+  if (visualMode === "hero") {
+    const hero = getHeroAbilityInfo(card);
+    if (hero) {
+      return {
+        kind: "hero",
+        title: `${card.name} Hero Ability`,
+        subtitle: `${hero.cost}-Elixir Ability: ${hero.ability}`,
+        effects: hero.effects || []
+      };
+    }
+    const champion = getChampionAbilityInfo(card);
+    if (champion) {
+      const costText = Number.isFinite(Number(champion.cost))
+        ? `${champion.cost}-Elixir Ability`
+        : "Ability Cost Varies";
+      return {
+        kind: "champion",
+        title: `${card.name} Champion Ability`,
+        subtitle: `${costText}: ${champion.ability}`,
+        effects: champion.effects || []
+      };
+    }
+  }
+  return null;
+}
+
 function ensureEvoInfoModal() {
   let modal = document.getElementById("evoInfoModal");
   if (modal) return modal;
@@ -734,20 +902,18 @@ function ensureEvoInfoModal() {
   return modal;
 }
 
-function openEvoInfoModal(card) {
-  const info = getEvoAbilityInfo(card);
-  if (!info) return;
-
+function openCardModeInfoModal(card, modeInfo) {
+  if (!modeInfo) return;
   const modal = ensureEvoInfoModal();
   const title = modal.querySelector("#evoInfoTitle");
   const cycle = modal.querySelector("#evoInfoCycle");
   const list = modal.querySelector("#evoInfoList");
   if (!title || !cycle || !list) return;
 
-  title.textContent = `${card.name} Evolution`;
-  cycle.textContent = `${info.cycles}-Cycle Evolution`;
+  title.textContent = modeInfo.title || card.name;
+  cycle.textContent = modeInfo.subtitle || "";
   list.innerHTML = "";
-  (info.effects || []).forEach((line) => {
+  (modeInfo.effects || []).forEach((line) => {
     const li = document.createElement("li");
     li.textContent = line;
     list.appendChild(li);
