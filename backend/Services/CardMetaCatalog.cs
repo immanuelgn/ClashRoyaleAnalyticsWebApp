@@ -91,7 +91,7 @@ namespace ClashRoyaleMetaAnalytics.Services
             ["battle ram"] = "https://vignette.wikia.nocookie.net/clashroyale/images/a/a0/Evolved_Battle_Ram_card_render.png/revision/latest/scale-to-width-down/256?cb=20240819084841",
             ["cannon"] = "https://vignette.wikia.nocookie.net/clashroyale/images/b/b0/Evolved_Cannon_card_render.png/revision/latest/scale-to-width-down/256?cb=20241118041509",
             ["baby dragon"] = "https://vignette.wikia.nocookie.net/clashroyale/images/8/87/Evolved_Baby_Dragon_card_render.png/revision/latest/scale-to-width-down/256?cb=20250505090244",
-            ["minion horde"] = "https://cdns3.royaleapi.com/static/img/blog/2026-04-season-82/evo-minion-horde/v1-81a87e66/evo-minion-horde-a-288-005.jpg"
+            ["minion horde"] = "https://cdn.royaleapi.com/static/img/cards-150/minion-horde-ev1.png"
         };
 
         private static readonly HashSet<string> HeroSlugs = new(StringComparer.OrdinalIgnoreCase)

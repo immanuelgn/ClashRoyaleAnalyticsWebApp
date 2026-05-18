@@ -25,7 +25,7 @@ const HERO_CARD_SLUGS = new Set([
 
 const EVO_FORCE_OFF_SLUGS = new Set(["the-log"]);
 const EVO_ICON_OVERRIDES = {
-  "minion-horde": "https://cdns3.royaleapi.com/static/img/blog/2026-04-season-82/evo-minion-horde/v1-81a87e66/evo-minion-horde-a-288-005.jpg"
+  "minion-horde": "https://cdn.royaleapi.com/static/img/cards-150/minion-horde-ev1.png"
 };
 
 const DEFENSIVE_BUILDING_IDS = new Set([

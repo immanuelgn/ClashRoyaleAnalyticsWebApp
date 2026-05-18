@@ -75,8 +75,7 @@ const HERO_ART_OVERRIDES = {
 
 const EVO_ART_OVERRIDES = {
   "Minion Horde": [
-    "https://cdns3.royaleapi.com/static/img/blog/2026-04-season-82/evo-minion-horde/v1-81a87e66/evo-minion-horde-a-288-005.jpg",
-    "https://cdns3.royaleapi.com/cdn-cgi/image/width=768,height=768,fit=cover,quality=80,format=auto,onerror=redirect/static/img/blog/2026-04-season-82/evo-minion-horde/v1-81a87e66/evo-minion-horde-a-288-005.jpg"
+    "https://cdn.royaleapi.com/static/img/cards-150/minion-horde-ev1.png"
   ]
 };
 
