@@ -129,6 +129,10 @@ def _fallback_predict(feats: dict) -> float:
         score += 1.8 if feats.get("avg_elixir", 3.6) <= 3.3 and feats.get("win_con_count", 0) >= 1 else 0.2
     if feats.get("tower_royal_chef", 0) > 0:
         score += 1.0 if feats.get("tank_count", 0) >= 2 and feats.get("avg_elixir", 0) >= 3.7 else -1.8
+    # Integrate Evo/Hero/Champion ability signal into fallback predictions.
+    score += min(6.0, max(0.0, float(feats.get("evo_ability_value", 0.0)) * 0.8))
+    score += min(7.0, max(0.0, float(feats.get("hero_champ_ability_value", 0.0)) * 0.8))
+    score += min(2.0, max(0.0, float(feats.get("hero_champ_ability_cost_sum", 0.0)) * 0.35))
     return float(max(35.0, min(80.0, score)))
 
 
