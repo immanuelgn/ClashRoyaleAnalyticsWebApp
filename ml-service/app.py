@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import json
+import os
+import threading
+import time
+from collections import defaultdict, deque
 from pathlib import Path
-from typing import List, Optional
+from typing import Deque, Dict, List, Optional
 
 import joblib
 import numpy as np
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from db import (
@@ -28,12 +33,70 @@ APP_ROOT = Path(__file__).resolve().parent
 MODEL_PATH = APP_ROOT / "model.joblib"
 META_PATH = APP_ROOT / "model_meta.json"
 
-app = FastAPI(title="Clash Royale ML Service", version="1.0.0")
+
+def _truthy(v: Optional[str]) -> bool:
+    return str(v or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+ML_SERVICE_AUTH_TOKEN = str(os.getenv("ML_SERVICE_AUTH_TOKEN", "")).strip()
+ML_ENABLE_DOCS = _truthy(os.getenv("ML_ENABLE_DOCS"))
+ML_ENABLE_SCORE_PROXY = _truthy(os.getenv("ML_ENABLE_SCORE_PROXY"))
+ML_WRITE_RATE_LIMIT_PER_MIN = max(30, int(os.getenv("ML_WRITE_RATE_LIMIT_PER_MIN", "240")))
+
+app = FastAPI(
+    title="Clash Royale ML Service",
+    version="1.0.0",
+    docs_url="/docs" if ML_ENABLE_DOCS else None,
+    redoc_url="/redoc" if ML_ENABLE_DOCS else None,
+    openapi_url="/openapi.json" if ML_ENABLE_DOCS else None,
+)
 
 CARDS = load_cards()
 CARD_MAP = map_cards_by_id(CARDS)
 MODEL = None
 META = {"modelVersion": "untrained"}
+_RATE_LOCK = threading.Lock()
+_WRITE_HITS: Dict[str, Deque[float]] = defaultdict(deque)
+_WRITE_WINDOW_SECONDS = 60.0
+_WRITE_PATHS = {"/predict", "/feedback", "/learning/status"}
+
+
+def _client_ip(request: Request) -> str:
+    xff = (request.headers.get("x-forwarded-for") or "").strip()
+    if xff:
+        return xff.split(",")[0].strip() or "unknown"
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
+def _check_write_rate_limit(ip: str) -> bool:
+    now = time.time()
+    with _RATE_LOCK:
+        bucket = _WRITE_HITS[ip]
+        while bucket and (now - bucket[0]) > _WRITE_WINDOW_SECONDS:
+            bucket.popleft()
+        if len(bucket) >= ML_WRITE_RATE_LIMIT_PER_MIN:
+            return False
+        bucket.append(now)
+        return True
+
+
+def _authorized_internal_request(request: Request) -> bool:
+    if not ML_SERVICE_AUTH_TOKEN:
+        return True
+    sent = (request.headers.get("x-ml-auth") or "").strip()
+    return sent == ML_SERVICE_AUTH_TOKEN
+
+
+@app.middleware("http")
+async def guard_internal_write_routes(request: Request, call_next):
+    if request.url.path in _WRITE_PATHS:
+        if not _authorized_internal_request(request):
+            return JSONResponse(status_code=401, content={"detail": "Unauthorized"})
+        if not _check_write_rate_limit(_client_ip(request)):
+            return JSONResponse(status_code=429, content={"detail": "Too many requests"})
+    return await call_next(request)
 
 
 class PredictRequest(BaseModel):
@@ -222,7 +285,7 @@ def predict(req: PredictRequest):
     if len(drivers) == 0:
         drivers.append("Deck profile has balanced structure across core dimensions.")
 
-    if req.scoreProxy is not None:
+    if ML_ENABLE_SCORE_PROXY and req.scoreProxy is not None:
         update_online_calibration(baseline, req.scoreProxy)
     calib = get_online_calibration()
 

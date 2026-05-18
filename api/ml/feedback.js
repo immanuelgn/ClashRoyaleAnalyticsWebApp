@@ -1,4 +1,4 @@
-const { getMlServiceBase } = require("../_lib/mlService");
+const { getMlServiceBase, getMlServiceHeaders } = require("../_lib/mlService");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
@@ -34,7 +34,7 @@ module.exports = async function handler(req, res) {
     const url = `${String(base).replace(/\/+$/, "")}/feedback`;
     const r = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getMlServiceHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({
         cardIds,
         towerTroop,
@@ -49,11 +49,10 @@ module.exports = async function handler(req, res) {
     });
 
     if (!r.ok) {
-      const text = await r.text();
       return res.status(200).json({
         ok: false,
         source: "python-ml-service",
-        message: `ML feedback write failed (${r.status}). ${text || ""}`.trim()
+        message: `ML feedback write failed (${r.status}).`
       });
     }
 

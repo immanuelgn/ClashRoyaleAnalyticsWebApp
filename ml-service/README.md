@@ -21,6 +21,22 @@ Required env var:
 DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DBNAME
 ```
 
+Recommended security env vars:
+
+```bash
+# Shared secret between Vercel API routes and this ML service
+ML_SERVICE_AUTH_TOKEN=your-long-random-secret
+
+# Keep docs/OpenAPI disabled in production by default
+ML_ENABLE_DOCS=false
+
+# Disable public calibration writes from analyze traffic (recommended)
+ML_ENABLE_SCORE_PROXY=false
+
+# Optional write-path rate limit per minute, default=240
+ML_WRITE_RATE_LIMIT_PER_MIN=240
+```
+
 ## 2) Train model
 
 ```bash
@@ -77,6 +93,8 @@ Set env var on your Node/Vercel API:
 
 - `ML_SERVICE_URL=http://localhost:8001` (local)
 - or your deployed Python service URL
+- `ML_SERVICE_AUTH_TOKEN=the-same-secret-as-Render`
+- `ML_ENABLE_SCORE_PROXY=false` (recommended)
 
 When set, `/api/deck/synergy` will merge Python ML results into response.
 

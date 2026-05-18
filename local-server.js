@@ -15,6 +15,10 @@ const mime = {
 http.createServer((req, res) => {
   let reqPath = req.url.split('?')[0];
   if (reqPath === '/') reqPath = '/index.html';
+  if (reqPath.includes('/.') || path.basename(reqPath).startsWith('.')) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    return res.end('Forbidden');
+  }
 
   const filePath = path.join(root, reqPath);
   if (!filePath.startsWith(root)) {

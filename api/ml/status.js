@@ -1,4 +1,4 @@
-const { getMlServiceBase } = require("../_lib/mlService");
+const { getMlServiceBase, getMlServiceHeaders } = require("../_lib/mlService");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "GET") {
@@ -17,7 +17,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const url = `${String(base).replace(/\/+$/, "")}/learning/status`;
-    const r = await fetch(url);
+    const r = await fetch(url, { headers: getMlServiceHeaders() });
     if (!r.ok) {
       return res.status(200).json({
         ok: false,

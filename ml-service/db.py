@@ -535,7 +535,7 @@ def get_learning_stats() -> Dict:
 
             cur.execute(
                 """
-                SELECT id, created_at, predicted_win_rate, confidence, score_proxy, model_version, source
+                SELECT created_at, predicted_win_rate, confidence, model_version, source
                 FROM analysis_events
                 ORDER BY id DESC
                 LIMIT 5
@@ -545,7 +545,7 @@ def get_learning_stats() -> Dict:
 
             cur.execute(
                 """
-                SELECT id, created_at, won, tower_troop, opponent_archetype, trophies
+                SELECT created_at, won, tower_troop
                 FROM battle_feedback
                 ORDER BY id DESC
                 LIMIT 5

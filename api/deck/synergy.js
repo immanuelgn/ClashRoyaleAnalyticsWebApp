@@ -1,15 +1,18 @@
 const { analyzeDeck } = require("../_lib/deck");
-const { getMlServiceBase } = require("../_lib/mlService");
+const { getMlServiceBase, getMlServiceHeaders, isScoreProxyEnabled } = require("../_lib/mlService");
 
 async function getMlPrediction(cardIds, towerTroop, scoreProxy) {
   const base = getMlServiceBase();
   if (!base) return null;
   try {
     const url = `${base}/predict`;
+    const body = { cardIds, towerTroop };
+    if (isScoreProxyEnabled()) body.scoreProxy = scoreProxy;
+
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cardIds, towerTroop, scoreProxy })
+      headers: getMlServiceHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(body)
     });
     if (!res.ok) return null;
     const data = await res.json();
