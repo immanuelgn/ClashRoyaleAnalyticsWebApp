@@ -676,6 +676,21 @@ button.secondary { background: #334155; color: #e2e8f0; }
   color: var(--text);
 }
 
+.pool-tools {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr 1fr;
+  gap: 8px;
+}
+
+.pool-tools select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0b1220;
+  color: var(--text);
+}
+
 .card-pool {
   margin-top: 10px;
   display: grid;
@@ -892,6 +907,7 @@ ul { padding-left: 20px; }
 
 @media (max-width: 800px) {
   body::before, body::after { display: none; }
+  .pool-tools { grid-template-columns: 1fr; }
   .dashboard-grid { grid-template-columns: 1fr; }
   .left-column .panel:first-child { position: static; }
   .left-column .panel:first-child {

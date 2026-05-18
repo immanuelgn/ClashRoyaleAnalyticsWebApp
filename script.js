@@ -392,6 +392,8 @@ const META_PRESETS = [
 const state = {
   cards: [],
   filteredCards: [],
+  poolTypeFilter: "all",
+  poolSortFilter: "az",
   deck: Array(8).fill(null),
   drag: null,
   selectedTowerTroop: "tower_princess",
@@ -427,6 +429,8 @@ const towerTroopsEl = document.getElementById("towerTroops");
 const cardPoolEl = document.getElementById("cardPool");
 const statusEl = document.getElementById("status");
 const searchEl = document.getElementById("searchInput");
+const cardTypeFilterEl = document.getElementById("cardTypeFilter");
+const cardSortFilterEl = document.getElementById("cardSortFilter");
 const simDeckSelect = document.getElementById("simDeckSelect");
 const weaknessPanelEl = document.getElementById("weaknessPanel");
 
@@ -439,6 +443,8 @@ document.getElementById("exportRevisionBtn").addEventListener("click", exportSna
 document.getElementById("mlWonBtn")?.addEventListener("click", () => submitMlFeedback(true));
 document.getElementById("mlLostBtn")?.addEventListener("click", () => submitMlFeedback(false));
 searchEl.addEventListener("input", onSearch);
+cardTypeFilterEl?.addEventListener("change", onCardTypeFilterChange);
+cardSortFilterEl?.addEventListener("change", onCardSortFilterChange);
 document.querySelectorAll(".weakness-btn").forEach((btn) => btn.addEventListener("click", () => runWeaknessProfile(btn.dataset.profile)));
 
 boot();
@@ -450,7 +456,7 @@ async function boot() {
     const { cards, base } = await loadCardsWithFallback();
     ACTIVE_API_BASE = base;
     state.cards = normalizeCardFlags(cards).sort((a, b) => a.name.localeCompare(b.name));
-    state.filteredCards = [...state.cards];
+    applyCardPoolFilters();
     renderTowerTroops();
     renderSlots();
     renderCardPool();
@@ -518,9 +524,44 @@ function renderMetaPresets() {
 }
 
 function onSearch() {
-  const q = searchEl.value.trim().toLowerCase();
-  state.filteredCards = state.cards.filter((c) => c.name.toLowerCase().includes(q));
+  applyCardPoolFilters();
   renderCardPool();
+}
+
+function onCardTypeFilterChange() {
+  state.poolTypeFilter = String(cardTypeFilterEl?.value || "all");
+  applyCardPoolFilters();
+  renderCardPool();
+}
+
+function onCardSortFilterChange() {
+  state.poolSortFilter = String(cardSortFilterEl?.value || "az");
+  applyCardPoolFilters();
+  renderCardPool();
+}
+
+function cardMatchesTypeFilter(card, typeFilter) {
+  if (typeFilter === "evo") return !!card?.isEvolution;
+  if (typeFilter === "heroes_champions") return !!card?.isHero || !!card?.isChampion;
+  if (typeFilter === "champions") return !!card?.isChampion;
+  if (typeFilter === "heroes") return !!card?.isHero;
+  return true;
+}
+
+function applyCardPoolFilters() {
+  const q = String(searchEl?.value || "").trim().toLowerCase();
+  const typeFilter = String(cardTypeFilterEl?.value || state.poolTypeFilter || "all");
+  const sortFilter = String(cardSortFilterEl?.value || state.poolSortFilter || "az");
+  state.poolTypeFilter = typeFilter;
+  state.poolSortFilter = sortFilter;
+
+  const filtered = state.cards
+    .filter((c) => cardMatchesTypeFilter(c, typeFilter))
+    .filter((c) => c.name.toLowerCase().includes(q))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  if (sortFilter === "za") filtered.reverse();
+  state.filteredCards = filtered;
 }
 
 function clearDeck() {

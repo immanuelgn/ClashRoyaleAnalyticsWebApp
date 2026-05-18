@@ -21,7 +21,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="style.css?v=20260518f" />
+  <link rel="stylesheet" href="style.css?v=20260518g" />
 </head>
 <body>
   <main class="container">
@@ -66,7 +66,20 @@
       <div class="left-column">
         <section class="panel">
           <h2>Card Pool</h2>
-          <input id="searchInput" placeholder="Search cards..." />
+          <div class="pool-tools">
+            <input id="searchInput" placeholder="Search cards..." />
+            <select id="cardTypeFilter" aria-label="Filter cards by type">
+              <option value="all">All Cards</option>
+              <option value="evo">Evos</option>
+              <option value="heroes_champions">Heroes + Champions</option>
+              <option value="champions">Champions Only</option>
+              <option value="heroes">Heroes Only</option>
+            </select>
+            <select id="cardSortFilter" aria-label="Sort cards alphabetically">
+              <option value="az">A to Z</option>
+              <option value="za">Z to A</option>
+            </select>
+          </div>
           <div id="cardPool" class="card-pool"></div>
         </section>
       </div>
@@ -297,7 +310,7 @@
   </main>
 
   <script src="config.js?v=20260502f"></script>
-  <script src="script.js?v=20260518f"></script>
+  <script src="script.js?v=20260518g"></script>
 </body>
 </html>
 
