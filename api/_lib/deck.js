@@ -22,6 +22,10 @@ const HERO_CARD_SLUGS = new Set([
   "magic-archer", "mega-minion", "mini-pekka", "musketeer", "wizard", "balloon",
   "dark-prince", "bowler"
 ]);
+const CHAMPION_CARD_SLUGS = new Set([
+  "archer-queen", "boss-bandit", "goblinstein", "golden-knight",
+  "little-prince", "mighty-miner", "monk", "skeleton-king"
+]);
 
 const EVO_FORCE_OFF_SLUGS = new Set(["the-log"]);
 const EVO_ICON_OVERRIDES = {
@@ -84,6 +88,16 @@ const HERO_ABILITY_IMPACT = {
   "musketeer": { cost: 3, impact: ["turret-support", "dual-target-defense"] },
   "dark-prince": { cost: 3, impact: ["split-entity", "aoe-smash"] }
 };
+const CHAMPION_ABILITY_IMPACT = {
+  "golden-knight": { cost: 1, impact: ["chain-dash", "invuln-entry"] },
+  "mighty-miner": { cost: 1, impact: ["lane-shift", "bomb-control"] },
+  "archer-queen": { cost: 1, impact: ["cloak", "dps-spike"] },
+  "monk": { cost: 1, impact: ["projectile-reflect", "damage-mitigation"] },
+  "boss-bandit": { cost: 1, impact: ["invis-reset", "dash-reengage"] },
+  "skeleton-king": { cost: 2, impact: ["soul-summon", "swarm-pressure"] },
+  "little-prince": { cost: 2, impact: ["guardian-call", "entry-knockback"] },
+  "goblinstein": { cost: 2, impact: ["beam-zone", "sustained-shock"] }
+};
 
 const DEFENSIVE_BUILDING_IDS = new Set([
   27000000, // Cannon
@@ -145,10 +159,11 @@ function normalizeTowerTroop(towerTroop) {
 
 function withFlags(card) {
   const slug = slugify(card.name);
-  const isChampion = (card.rarity || "").toLowerCase() === "champion";
+  const isChampion = (card.rarity || "").toLowerCase() === "champion" || CHAMPION_CARD_SLUGS.has(slug);
   const isHero = HERO_CARD_SLUGS.has(slug);
   const isEvolution = EVO_CARD_SLUGS.has(slug) && !EVO_FORCE_OFF_SLUGS.has(slug);
-  const allowedSlots = ["normal"];
+  const allowedSlots = [];
+  if (!isEvolution && !isHero && !isChampion) allowedSlots.push("normal");
   if (isEvolution) allowedSlots.push("evo");
   if (isHero || isChampion) allowedSlots.push("hero");
   if (isEvolution || isHero || isChampion) allowedSlots.push("wild");
@@ -196,7 +211,7 @@ function computeEvolutionAbilityValue(cards, wildSlotMode) {
 
 function getHeroAbilityProfile(card) {
   const slug = slugify(card?.name || "");
-  return HERO_ABILITY_IMPACT[slug] || null;
+  return HERO_ABILITY_IMPACT[slug] || CHAMPION_ABILITY_IMPACT[slug] || null;
 }
 
 function computeHeroAbilityValue(cards, wildSlotMode) {
@@ -213,7 +228,7 @@ function computeHeroAbilityValue(cards, wildSlotMode) {
     if (slot === "wild" && wildMode !== "hero") return;
     const slug = slugify(card?.name || "");
     const isHero = HERO_CARD_SLUGS.has(slug);
-    const isChampion = (card?.rarity || "").toLowerCase() === "champion";
+    const isChampion = (card?.rarity || "").toLowerCase() === "champion" || CHAMPION_CARD_SLUGS.has(slug);
     if (!(isHero || isChampion)) return;
     const profile = getHeroAbilityProfile(card);
     if (!profile) {

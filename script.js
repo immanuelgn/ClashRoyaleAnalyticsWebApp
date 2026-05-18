@@ -55,6 +55,10 @@ const HERO_CARD_SLUGS = new Set([
   "magic-archer", "mega-minion", "mini-pekka", "musketeer", "wizard", "balloon",
   "dark-prince", "bowler"
 ]);
+const CHAMPION_CARD_SLUGS = new Set([
+  "archer-queen", "boss-bandit", "goblinstein", "golden-knight",
+  "little-prince", "mighty-miner", "monk", "skeleton-king"
+]);
 
 const EVO_FORCE_OFF_SLUGS = new Set(["the-log"]);
 
@@ -308,44 +312,44 @@ const HERO_ABILITY_INFO = {
 
 const CHAMPION_ABILITY_INFO = {
   "mighty-miner": {
-    cost: 2,
+    cost: 1,
     ability: "Bomb Rush",
-    effects: ["Switches lanes and drops a timed bomb at the original spot.", "High swing value for defense-to-counterpush transitions."]
+    effects: ["Burrows and tunnels horizontally to the mirrored position in the opposite lane.", "Leaves a ticking area bomb at his original spot to clear swarms and support resets."]
   },
   "skeleton-king": {
     cost: 2,
     ability: "Soul Summon",
-    effects: ["Consumes nearby souls to summon a Skeleton swarm.", "Best value after heavy trades and swarm clears."]
+    effects: ["Collects up to 14 souls from dying units on the field.", "Spends souls to summon a large ring of Skeletons around him."]
   },
   "archer-queen": {
     cost: 1,
     ability: "Cloaking Cape",
-    effects: ["Turns invisible and boosts attack speed for a short duration.", "Strong pickoff window versus tanks and support units."]
+    effects: ["Becomes invisible and untargetable for 3.5 seconds.", "Massively increases attack speed while cloaked for high safe DPS."]
   },
   "golden-knight": {
     cost: 1,
     ability: "Dashing Dash",
-    effects: ["Chains dashes through multiple nearby targets.", "Converts lane pressure quickly when pathing is open."]
+    effects: ["Chain-dashes through up to 10 enemy targets ahead.", "Dash is invulnerable and stops early on Crown Tower hit or when no target is in range."]
   },
   "monk": {
     cost: 1,
     ability: "Pensive Protection",
-    effects: ["Enters a defensive stance and reflects many incoming projectiles.", "Great for denying spell and ranged burst timing."]
+    effects: ["Channels a 4-second defensive stance with 80% incoming damage reduction.", "Reflects enemy ranged projectiles, including heavy spells, back toward the opponent."]
   },
   "little-prince": {
-    cost: 3,
+    cost: 2,
     ability: "Guardian Assist",
-    effects: ["Calls in the Guardian to protect and pressure immediately.", "Adds burst frontline value on demand."]
+    effects: ["Calls in Guardienne directly in front of him.", "Entry causes a wide horizontal knockback that damages and shoves ground troops away."]
   },
   "goblinstein": {
-    cost: null,
-    ability: "Champion Active Ability",
-    effects: ["Champion mode is active for this card.", "Ability details vary by patch; verify exact live values in-game."]
+    cost: 2,
+    ability: "High-Voltage Link",
+    effects: ["Activates an electrical beam between the Doctor and the Monster.", "Enemies caught near or crossing the link take continuous shock damage for 4 seconds."]
   },
   "boss-bandit": {
-    cost: null,
-    ability: "Champion Active Ability",
-    effects: ["Champion mode is active for this card.", "Ability details vary by patch; verify exact live values in-game."]
+    cost: 1,
+    ability: "Getaway Grenade",
+    effects: ["Drops a smoke grenade, turns invisible briefly, and teleports 6 tiles backward to break lock-on.", "Sets up another heavy invulnerable dash; max 2 ability uses per deployment."]
   }
 };
 
@@ -482,10 +486,12 @@ async function loadCardsWithFallback() {
 function normalizeCardFlags(cards) {
   return (cards || []).map((c) => {
     const slug = toCardSlug(c.name);
-    const isChampion = !!c.isChampion;
+    const rarity = String(c?.rarity || "").toLowerCase();
+    const isChampion = !!c.isChampion || rarity === "champion" || CHAMPION_CARD_SLUGS.has(slug);
     const isHero = HERO_CARD_SLUGS.has(slug);
     const isEvolution = EVO_CARD_SLUGS.has(slug) && !EVO_FORCE_OFF_SLUGS.has(slug);
-    const allowedSlots = ["normal"];
+    const allowedSlots = [];
+    if (!isEvolution && !isHero && !isChampion) allowedSlots.push("normal");
     if (isEvolution) allowedSlots.push("evo");
     if (isHero || isChampion) allowedSlots.push("hero");
     if (isEvolution || isHero || isChampion) allowedSlots.push("wild");
@@ -1052,6 +1058,14 @@ function isEvolutionCard(card) { return !!card?.isEvolution; }
 function isSpecialCard(card) { return isHeroOrChampion(card) || isEvolutionCard(card); }
 
 function validateCardForSlot(card, slotType, deckState) {
+  const rarity = String(card?.rarity || "").toLowerCase();
+  const slug = toCardSlug(card?.name || "");
+  const isChamp = !!card?.isChampion || rarity === "champion" || CHAMPION_CARD_SLUGS.has(slug);
+  const isHero = !!card?.isHero || HERO_CARD_SLUGS.has(slug);
+  const isEvo = !!card?.isEvolution || (EVO_CARD_SLUGS.has(slug) && !EVO_FORCE_OFF_SLUGS.has(slug));
+  if (slotType === "normal" && (isChamp || isHero || isEvo)) {
+    return { ok: false, message: `"${card.name}" is special and must be in Evo/Wild/Hero slots.` };
+  }
   const allowed = Array.isArray(card.allowedSlots) ? card.allowedSlots : ["normal"];
   if (!allowed.includes(slotType)) {
     if (slotType === "evo") return { ok: false, message: `"${card.name}" cannot be used as Evolution in Slot 1.` };
