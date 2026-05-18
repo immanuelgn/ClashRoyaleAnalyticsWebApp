@@ -751,6 +751,10 @@ function getDisplayImageFallbacks(card, slotType, slotIndex = -1) {
   if (slotType === "hero") {
     // Keep local override optional, but always prefer RoyaleAPI card-asset hero art over blog promo posters.
     for (const url of (HERO_ART_OVERRIDES[card.name] || [])) push(url);
+    if (card?.isChampion) {
+      push(base);
+      return list;
+    }
     push(`${ASSET_VARIANT_BASE}${slug}-hero.png`);
     push(card.heroIconUrl);
     push(base);
@@ -761,6 +765,10 @@ function getDisplayImageFallbacks(card, slotType, slotIndex = -1) {
     if (wildMode === "hero") {
       // Keep local override optional, but always prefer RoyaleAPI card-asset hero art over blog promo posters.
       for (const url of (HERO_ART_OVERRIDES[card.name] || [])) push(url);
+      if (card?.isChampion) {
+        push(base);
+        return list;
+      }
       push(`${ASSET_VARIANT_BASE}${slug}-hero.png`);
       push(card.heroIconUrl);
       push(base);
