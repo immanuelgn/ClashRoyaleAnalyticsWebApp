@@ -1,12 +1,12 @@
 const { analyzeDeck } = require("../_lib/deck");
 const { getMlServiceBase, getMlServiceHeaders, isScoreProxyEnabled } = require("../_lib/mlService");
 
-async function getMlPrediction(cardIds, towerTroop, scoreProxy) {
+async function getMlPrediction(cardIds, towerTroop, wildSlotMode, scoreProxy) {
   const base = getMlServiceBase();
   if (!base) return null;
   try {
     const url = `${base}/predict`;
-    const body = { cardIds, towerTroop };
+    const body = { cardIds, towerTroop, wildSlotMode: wildSlotMode || null };
     if (isScoreProxyEnabled()) body.scoreProxy = scoreProxy;
 
     const res = await fetch(url, {
@@ -37,7 +37,7 @@ module.exports = async function handler(req, res) {
     const result = analyzeDeck(cardIds, towerTroop, wildSlotMode);
     if (result.error) return res.status(400).json({ error: result.error });
 
-    const ml = await getMlPrediction(cardIds, towerTroop, result.score);
+    const ml = await getMlPrediction(cardIds, towerTroop, wildSlotMode, result.score);
     if (ml) {
       result.mlForecast = ml.mlForecast || result.mlForecast;
       result.mlSuggestions = ml.mlSuggestions || result.mlSuggestions;

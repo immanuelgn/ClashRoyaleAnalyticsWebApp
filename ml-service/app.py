@@ -102,6 +102,7 @@ async def guard_internal_write_routes(request: Request, call_next):
 class PredictRequest(BaseModel):
     cardIds: List[int]
     towerTroop: str = "tower_princess"
+    wildSlotMode: Optional[str] = None
     scoreProxy: Optional[float] = None
 
 class FeedbackRequest(BaseModel):
@@ -131,8 +132,21 @@ def _fallback_predict(feats: dict) -> float:
     return float(max(35.0, min(80.0, score)))
 
 
-def predict_win_rate(card_ids: List[int], tower_troop: str):
-    vec, feats, deck_cards = build_feature_vector_from_ids(card_ids, tower_troop, CARD_MAP)
+def _model_feature_order() -> Optional[List[str]]:
+    order = META.get("featureOrder")
+    if isinstance(order, list) and len(order) > 0:
+        return [str(x) for x in order]
+    return None
+
+
+def predict_win_rate(card_ids: List[int], tower_troop: str, wild_slot_mode: Optional[str] = None):
+    vec, feats, deck_cards = build_feature_vector_from_ids(
+        card_ids,
+        tower_troop,
+        CARD_MAP,
+        wild_slot_mode=wild_slot_mode,
+        feature_order=_model_feature_order(),
+    )
     if MODEL is None:
         pred = _fallback_predict(feats)
     else:
@@ -142,10 +156,16 @@ def predict_win_rate(card_ids: List[int], tower_troop: str):
     return pred, feats, deck_cards
 
 
-def build_suggestions(card_ids: List[int], tower_troop: str, baseline: float):
+def build_suggestions(card_ids: List[int], tower_troop: str, baseline: float, wild_slot_mode: Optional[str] = None):
     deck_set = set(card_ids)
     candidates = [c for c in CARDS if int(c["id"]) not in deck_set][:90]
-    _, base_feats, deck_cards = build_feature_vector_from_ids(card_ids, tower_troop, CARD_MAP)
+    _, base_feats, deck_cards = build_feature_vector_from_ids(
+        card_ids,
+        tower_troop,
+        CARD_MAP,
+        wild_slot_mode=wild_slot_mode,
+        feature_order=_model_feature_order(),
+    )
     base_avg = float(base_feats.get("avg_elixir", 3.6))
     base_building = int(base_feats.get("building_count", 0))
     base_air = int(base_feats.get("air_counters", 0))
@@ -211,7 +231,7 @@ def build_suggestions(card_ids: List[int], tower_troop: str, baseline: float):
             next_ids[slot] = incoming_id
             if len(set(next_ids)) != 8:
                 continue
-            wr, next_feats, _ = predict_win_rate(next_ids, tower_troop)
+            wr, next_feats, _ = predict_win_rate(next_ids, tower_troop, wild_slot_mode=wild_slot_mode)
             if abs(float(next_feats.get("avg_elixir", base_avg)) - base_avg) > 0.55:
                 continue
             next_building = int(next_feats.get("building_count", 0))
@@ -270,10 +290,10 @@ def predict(req: PredictRequest):
     if len(unique) != 8:
         raise HTTPException(status_code=400, detail="Deck must contain 8 unique card IDs.")
     try:
-        baseline, feats, _ = predict_win_rate(unique, req.towerTroop)
+        baseline, feats, _ = predict_win_rate(unique, req.towerTroop, req.wildSlotMode)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    suggestions = build_suggestions(unique, req.towerTroop, baseline)
+    suggestions = build_suggestions(unique, req.towerTroop, baseline, req.wildSlotMode)
     confidence = max(55, min(95, int(64 + min(12, abs(baseline - 50) * 0.8))))
     drivers = []
     if feats["win_con_count"] == 0:

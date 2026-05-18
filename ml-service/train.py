@@ -16,6 +16,43 @@ ROOT = Path(__file__).resolve().parent
 MODEL_PATH = ROOT / "model.joblib"
 META_PATH = ROOT / "model_meta.json"
 
+def infer_wild_mode(card_by_id: dict, deck_ids: list[int]) -> str:
+    if len(deck_ids) < 2:
+        return ""
+    slot2 = card_by_id.get(int(deck_ids[1]))
+    if not slot2:
+        return ""
+    name = str(slot2.get("name") or "").strip().lower().replace(".", "").replace("'", "").replace("&", "and").replace(" ", "-")
+    rarity = str(slot2.get("rarity") or "").lower()
+    hero_slugs = {
+        "barbarian-barrel", "giant", "goblins", "ice-golem", "knight",
+        "magic-archer", "mega-minion", "mini-pekka", "musketeer", "wizard", "balloon",
+        "dark-prince", "bowler",
+    }
+    champion_slugs = {
+        "archer-queen", "boss-bandit", "goblinstein", "golden-knight",
+        "little-prince", "mighty-miner", "monk", "skeleton-king",
+    }
+    evo_slugs = {
+        "archers", "baby-dragon", "barbarians", "bats", "battle-ram",
+        "bomber", "cannon", "dart-goblin", "electro-dragon", "executioner",
+        "firecracker", "furnace", "giant-snowball", "goblin-barrel", "goblin-cage",
+        "goblin-drill", "goblin-giant", "hunter", "ice-spirit",
+        "inferno-dragon", "knight", "lumberjack", "mega-knight",
+        "minion-horde", "musketeer", "mortar", "pekka", "royal-ghost", "royal-giant",
+        "royal-hogs", "royal-recruits", "skeleton-army", "skeleton-barrel", "skeletons",
+        "tesla", "valkyrie", "wall-breakers", "witch", "wizard", "zap",
+    }
+    has_hero = name in hero_slugs or rarity == "champion" or name in champion_slugs
+    has_evo = name in evo_slugs and name != "the-log"
+    if has_evo and has_hero:
+        return random.choice(["evo", "hero"])
+    if has_hero:
+        return "hero"
+    if has_evo:
+        return "evo"
+    return ""
+
 
 def pseudo_label(feats: dict) -> float:
     score = 52.0
@@ -52,8 +89,9 @@ def build_training_set(sample_count: int = 5000):
     for _ in range(sample_count):
         deck = random.sample(card_ids, 8)
         tower = random.choice(towers)
+        wild_mode = infer_wild_mode(card_by_id, deck)
         deck_cards = [card_by_id[i] for i in deck]
-        feats = build_feature_dict(deck_cards, tower, deck)
+        feats = build_feature_dict(deck_cards, tower, deck, wild_mode)
         X.append(vectorize(feats, FEATURE_ORDER))
         y.append(pseudo_label(feats))
     return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32)
@@ -75,8 +113,9 @@ def build_meta_anchor_training_set(variations_per_deck: int = 22):
         base_wr = float(row.get("winRatePct") or 52.0)
         base_target = float(max(40.0, min(80.0, 35.0 + ((base_wr - 45.0) * 2.2))))
         base_tower = random.choice(towers)
+        base_wild_mode = infer_wild_mode(card_by_id, ids)
         base_cards = [card_by_id[i] for i in ids]
-        base_feats = build_feature_dict(base_cards, base_tower, ids)
+        base_feats = build_feature_dict(base_cards, base_tower, ids, base_wild_mode)
         X.append(vectorize(base_feats, FEATURE_ORDER))
         y.append(base_target)
 
@@ -90,8 +129,9 @@ def build_meta_anchor_training_set(variations_per_deck: int = 22):
                 continue
             deck[slot] = random.choice(candidates)
             tower = random.choice(towers)
+            wild_mode = infer_wild_mode(card_by_id, deck)
             next_cards = [card_by_id[i] for i in deck]
-            feats = build_feature_dict(next_cards, tower, deck)
+            feats = build_feature_dict(next_cards, tower, deck, wild_mode)
             X.append(vectorize(feats, FEATURE_ORDER))
             similarity = float(feats.get("meta_max_similarity") or 0.0)
             penalty = max(0.8, 4.4 - (similarity * 4.0))
@@ -113,7 +153,8 @@ def build_feedback_training_set():
         deck = [card_by_id[i] for i in ids if i in card_by_id]
         if len(deck) != 8:
             continue
-        feats = build_feature_dict(deck, normalize_tower(r["tower_troop"]), ids)
+        wild_mode = infer_wild_mode(card_by_id, ids)
+        feats = build_feature_dict(deck, normalize_tower(r["tower_troop"]), ids, wild_mode)
         base = 58.0 if int(r["won"]) == 1 else 44.0
         cf = r.get("crowns_for")
         ca = r.get("crowns_against")
@@ -156,7 +197,7 @@ def main():
 
     joblib.dump(model, MODEL_PATH)
     meta = {
-        "modelVersion": "rf-v2-meta-prior",
+        "modelVersion": "rf-v3-meta-prior-ability-mode",
         "featureOrder": FEATURE_ORDER,
         "trainSamples": int(len(y)),
         "metaAnchorSamples": int(len(y_meta)),
