@@ -190,19 +190,26 @@
             4) Add optional opponent details to improve ML faster.
           </p>
           <div class="feedback-grid">
-            <input id="mlOppArchetypeInput" type="text" placeholder="Opponent archetype (optional: cycle, beatdown, bait, siege, control, bridge spam, custom_offmeta)" list="oppArchetypeOptions" />
+            <input id="mlOppArchetypeInput" type="text" placeholder="Opponent archetype (optional: fast_cycle, beatdown, air_beatdown, log_bait, hyper_bait, bridge_spam...)" list="oppArchetypeOptions" />
             <input id="mlTrophiesInput" type="number" min="0" max="10000" placeholder="Trophies (optional)" />
             <input id="mlCrownsForInput" type="number" min="0" max="3" placeholder="Your Crowns (0-3)" />
             <input id="mlCrownsAgainstInput" type="number" min="0" max="3" placeholder="Opponent Crowns (0-3)" />
           </div>
           <datalist id="oppArchetypeOptions">
-            <option value="cycle"></option>
+            <option value="fast_cycle"></option>
             <option value="beatdown"></option>
-            <option value="bait"></option>
-            <option value="control"></option>
+            <option value="air_beatdown"></option>
+            <option value="log_bait"></option>
+            <option value="hyper_bait"></option>
+            <option value="control_counterpush"></option>
             <option value="siege"></option>
             <option value="bridge_spam"></option>
-            <option value="air_beatdown"></option>
+            <option value="split_lane_pressure"></option>
+            <option value="midladder_no_wincon"></option>
+            <option value="midladder_overcommit"></option>
+            <option value="midladder_spell_turtle"></option>
+            <option value="midladder_freeze_trap"></option>
+            <option value="midladder_meta_hodgepodge"></option>
             <option value="custom_offmeta"></option>
           </datalist>
           <p id="mlFeedbackLine" class="sub"></p>

@@ -20,6 +20,7 @@ from db import (
     get_online_calibration,
     init_db,
     log_analysis_event,
+    normalize_opponent_archetype,
     update_online_calibration,
 )
 from feature_engineering import (
@@ -103,6 +104,7 @@ class PredictRequest(BaseModel):
     cardIds: List[int]
     towerTroop: str = "tower_princess"
     wildSlotMode: Optional[str] = None
+    opponentArchetype: Optional[str] = None
     scoreProxy: Optional[float] = None
 
 class FeedbackRequest(BaseModel):
@@ -134,6 +136,7 @@ def _fallback_predict(feats: dict) -> float:
     score += min(6.0, max(0.0, float(feats.get("evo_ability_value", 0.0)) * 0.8))
     score += min(7.0, max(0.0, float(feats.get("hero_champ_ability_value", 0.0)) * 0.8))
     score += min(2.0, max(0.0, float(feats.get("hero_champ_ability_cost_sum", 0.0)) * 0.35))
+    score += max(-2.0, min(2.0, float(feats.get("matchup_counter_index", 0.0)) * 1.8))
     return float(max(35.0, min(80.0, score)))
 
 
@@ -144,24 +147,39 @@ def _model_feature_order() -> Optional[List[str]]:
     return None
 
 
-def predict_win_rate(card_ids: List[int], tower_troop: str, wild_slot_mode: Optional[str] = None):
+def predict_win_rate(
+    card_ids: List[int],
+    tower_troop: str,
+    wild_slot_mode: Optional[str] = None,
+    opponent_archetype: Optional[str] = None,
+):
     vec, feats, deck_cards = build_feature_vector_from_ids(
         card_ids,
         tower_troop,
         CARD_MAP,
         wild_slot_mode=wild_slot_mode,
+        opponent_archetype=normalize_opponent_archetype(opponent_archetype),
         feature_order=_model_feature_order(),
     )
     if MODEL is None:
         pred = _fallback_predict(feats)
     else:
         pred = float(MODEL.predict(np.array([vec], dtype=np.float32))[0])
+    # Apply matchup adjustment directly so archetype context influences output
+    # even before the next full model retrain lands in production.
+    pred += max(-2.2, min(2.2, float(feats.get("matchup_counter_index", 0.0)) * 1.8))
     calib = get_online_calibration()
     pred = float(max(35.0, min(80.0, pred * float(calib.get("scale", 1.0)) + float(calib.get("bias", 0.0)))))
     return pred, feats, deck_cards
 
 
-def build_suggestions(card_ids: List[int], tower_troop: str, baseline: float, wild_slot_mode: Optional[str] = None):
+def build_suggestions(
+    card_ids: List[int],
+    tower_troop: str,
+    baseline: float,
+    wild_slot_mode: Optional[str] = None,
+    opponent_archetype: Optional[str] = None,
+):
     deck_set = set(card_ids)
     candidates = [c for c in CARDS if int(c["id"]) not in deck_set][:90]
     _, base_feats, deck_cards = build_feature_vector_from_ids(
@@ -169,6 +187,7 @@ def build_suggestions(card_ids: List[int], tower_troop: str, baseline: float, wi
         tower_troop,
         CARD_MAP,
         wild_slot_mode=wild_slot_mode,
+        opponent_archetype=normalize_opponent_archetype(opponent_archetype),
         feature_order=_model_feature_order(),
     )
     base_avg = float(base_feats.get("avg_elixir", 3.6))
@@ -236,7 +255,12 @@ def build_suggestions(card_ids: List[int], tower_troop: str, baseline: float, wi
             next_ids[slot] = incoming_id
             if len(set(next_ids)) != 8:
                 continue
-            wr, next_feats, _ = predict_win_rate(next_ids, tower_troop, wild_slot_mode=wild_slot_mode)
+            wr, next_feats, _ = predict_win_rate(
+                next_ids,
+                tower_troop,
+                wild_slot_mode=wild_slot_mode,
+                opponent_archetype=opponent_archetype,
+            )
             if abs(float(next_feats.get("avg_elixir", base_avg)) - base_avg) > 0.55:
                 continue
             next_building = int(next_feats.get("building_count", 0))
@@ -295,10 +319,10 @@ def predict(req: PredictRequest):
     if len(unique) != 8:
         raise HTTPException(status_code=400, detail="Deck must contain 8 unique card IDs.")
     try:
-        baseline, feats, _ = predict_win_rate(unique, req.towerTroop, req.wildSlotMode)
+        baseline, feats, _ = predict_win_rate(unique, req.towerTroop, req.wildSlotMode, req.opponentArchetype)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    suggestions = build_suggestions(unique, req.towerTroop, baseline, req.wildSlotMode)
+    suggestions = build_suggestions(unique, req.towerTroop, baseline, req.wildSlotMode, req.opponentArchetype)
     confidence = max(55, min(95, int(64 + min(12, abs(baseline - 50) * 0.8))))
     drivers = []
     if feats["win_con_count"] == 0:
@@ -307,6 +331,16 @@ def predict(req: PredictRequest):
         drivers.append("No building/spawner anchor increases defensive volatility.")
     if feats["air_counters"] <= 2:
         drivers.append("Low anti-air coverage can hurt key matchups.")
+    opp_arch = normalize_opponent_archetype(req.opponentArchetype)
+    if opp_arch and opp_arch != "custom_offmeta":
+        opp_text = opp_arch.replace("_", " ")
+        matchup_idx = float(feats.get("matchup_counter_index", 0.0))
+        if matchup_idx >= 0.35:
+            drivers.append(f"Matchup lean looks favorable versus {opp_text}.")
+        elif matchup_idx <= -0.35:
+            drivers.append(f"Matchup lean looks risky versus {opp_text}; defend first and counter-push.")
+        else:
+            drivers.append(f"Matchup appears close versus {opp_text}; outcome is execution-sensitive.")
     if len(drivers) == 0:
         drivers.append("Deck profile has balanced structure across core dimensions.")
 

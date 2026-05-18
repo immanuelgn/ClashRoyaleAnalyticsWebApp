@@ -296,21 +296,34 @@ function getMetadata(card) {
 }
 
 function detectArchetype(cards, metadata, avgElixir, winCons) {
-  const names = cards.map(c => (c.name || "").toLowerCase());
-  if (names.some(n => n.includes("x-bow"))) return { archetype: "Siege", confidence: 92 };
-  if (names.some(n => n.includes("lava") || n.includes("balloon"))) return { archetype: "Air Beatdown", confidence: 85 };
+  const names = cards.map(c => normalizeCardNameForMatch(c.name || ""));
+  const set = new Set(names);
+  const cycleCount = metadata.filter(m => m.isCycleCard).length;
+  const spellCount = metadata.filter(m => m.isSpell).length;
+  const buildingCount = metadata.filter(m => m.isBuilding).length;
+
+  const hasLogBaitCore = (set.has("goblin barrel") && set.has("princess")) || (set.has("goblin barrel") && spellCount >= 2 && cycleCount >= 2);
+  const hasHyperBait = hasLogBaitCore && cycleCount >= 3 && (set.has("dart goblin") || set.has("goblin gang") || set.has("skeleton army"));
+  if (hasHyperBait) return { archetype: "Hyper Bait", confidence: 90 };
+  if (hasLogBaitCore) return { archetype: "Log Bait", confidence: 88 };
+  if (set.has("royal recruits") && set.has("royal hogs")) return { archetype: "Split-Lane Pressure", confidence: 86 };
+  if (names.some(n => n.includes("x-bow") || n === "mortar")) return { archetype: "Siege", confidence: 92 };
+  if (set.has("lava hound") || (set.has("lava hound") && set.has("balloon"))) return { archetype: "Air Beatdown", confidence: 87 };
+  if (names.some(n => n.includes("battle ram") || n.includes("bandit") || n.includes("ram rider"))) return { archetype: "Bridge Spam", confidence: 80 };
   if (avgElixir >= 4.2 && winCons.length > 0) return { archetype: "Beatdown", confidence: 82 };
-  if (avgElixir <= 3.2 && metadata.filter(m => m.isCycleCard).length >= 2) return { archetype: "Cycle", confidence: 84 };
-  if (names.some(n => n.includes("battle ram") || n.includes("bandit"))) return { archetype: "Bridge Spam", confidence: 72 };
-  return { archetype: "Control", confidence: 70 };
+  if (avgElixir <= 3.2 && cycleCount >= 2 && winCons.length > 0) return { archetype: "Fast Cycle", confidence: 84 };
+  if ((set.has("graveyard") || set.has("miner")) && buildingCount >= 1) return { archetype: "Control / Counter-Push", confidence: 78 };
+  return { archetype: "Control / Counter-Push", confidence: 72 };
 }
 
 function buildMatchups(archetype) {
-  if (archetype === "Beatdown") return { "Strong Against": "Cycle", "Weak Against": "Control" };
-  if (archetype === "Air Beatdown") return { "Strong Against": "Ground Beatdown", "Weak Against": "Heavy Anti-Air Control" };
-  if (archetype === "Cycle") return { "Strong Against": "Control", "Weak Against": "Beatdown" };
-  if (archetype === "Siege") return { "Strong Against": "Slow Beatdown", "Weak Against": "Fast Pressure Cycle" };
-  return { "Strong Against": "Beatdown", "Weak Against": "Cycle" };
+  if (archetype === "Beatdown") return { "Strong Against": "Siege", "Weak Against": "Fast Cycle / Bridge Spam pressure" };
+  if (archetype === "Air Beatdown") return { "Strong Against": "Ground-only defenses", "Weak Against": "Heavy anti-air control" };
+  if (archetype === "Fast Cycle") return { "Strong Against": "Slow heavy decks", "Weak Against": "Perfect bait punish windows" };
+  if (archetype === "Siege") return { "Strong Against": "Passive setups", "Weak Against": "Beatdown tanks + bridge pressure" };
+  if (archetype === "Log Bait" || archetype === "Hyper Bait") return { "Strong Against": "Single small-spell rotations", "Weak Against": "Double splash + precise spell cycle" };
+  if (archetype === "Bridge Spam") return { "Strong Against": "Beatdown setups", "Weak Against": "High-structure control shells" };
+  return { "Strong Against": "Overcommit decks", "Weak Against": "Hard counter matchups" };
 }
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }

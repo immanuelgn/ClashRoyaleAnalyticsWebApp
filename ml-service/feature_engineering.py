@@ -39,6 +39,50 @@ WIN_CONDITION_NAMES = {
     "miner", "ram rider", "battle ram", "goblin drill", "lava hound", "electro giant",
     "royal giant", "royal hogs", "graveyard", "wall breakers",
 }
+ARCHETYPE_LABELS = [
+    "fast_cycle",
+    "beatdown",
+    "air_beatdown",
+    "log_bait",
+    "hyper_bait",
+    "bridge_spam",
+    "control_counterpush",
+    "siege",
+    "split_lane_pressure",
+    "custom_offmeta",
+]
+ARCHETYPE_ALIASES = {
+    "cycle": "fast_cycle",
+    "fast_cycle": "fast_cycle",
+    "beatdown": "beatdown",
+    "air_beatdown": "air_beatdown",
+    "lavaloon": "air_beatdown",
+    "log_bait": "log_bait",
+    "hyper_bait": "hyper_bait",
+    "bridge_spam": "bridge_spam",
+    "control": "control_counterpush",
+    "control_counterpush": "control_counterpush",
+    "siege": "siege",
+    "split_lane_pressure": "split_lane_pressure",
+}
+MATCHUP_COUNTER_PRIOR = {
+    ("fast_cycle", "beatdown"): 0.6,
+    ("fast_cycle", "air_beatdown"): 0.3,
+    ("fast_cycle", "log_bait"): -0.1,
+    ("fast_cycle", "bridge_spam"): -0.3,
+    ("beatdown", "fast_cycle"): -0.6,
+    ("beatdown", "siege"): 0.5,
+    ("beatdown", "log_bait"): 0.2,
+    ("air_beatdown", "fast_cycle"): -0.3,
+    ("air_beatdown", "bridge_spam"): 0.2,
+    ("log_bait", "fast_cycle"): 0.1,
+    ("log_bait", "beatdown"): -0.2,
+    ("bridge_spam", "beatdown"): 0.4,
+    ("bridge_spam", "control_counterpush"): -0.2,
+    ("control_counterpush", "beatdown"): 0.2,
+    ("siege", "beatdown"): -0.5,
+    ("split_lane_pressure", "beatdown"): 0.3,
+}
 
 EVO_CARD_SLUGS = {
     "archers", "baby-dragon", "barbarians", "bats", "battle-ram",
@@ -316,11 +360,65 @@ def compute_hero_champ_ability(cards: List[dict], wild_slot_mode: str) -> Tuple[
     return total, cost_sum, active
 
 
+def normalize_archetype_label(value: str | None) -> str:
+    raw = " ".join(str(value or "").strip().lower().replace("-", " ").replace("_", " ").split())
+    if not raw:
+        return "custom_offmeta"
+    if raw in ARCHETYPE_ALIASES:
+        return ARCHETYPE_ALIASES[raw]
+    underscored = raw.replace(" ", "_")
+    return ARCHETYPE_ALIASES.get(underscored, "custom_offmeta")
+
+
+def detect_deck_archetype(cards: List[dict], md: List[dict], avg_elixir: float, win_con_count: int) -> str:
+    names = [normalize_card_name(c.get("name") or "") for c in cards]
+    name_set = set(names)
+    cheap_cycle = sum(1 for m in md if m["is_cycle"])
+    spell_count = sum(1 for m in md if m["is_spell"])
+    building_count = sum(1 for m in md if m["is_building"])
+    has_bridge_spam_core = any(n in name_set for n in {"battle ram", "ram rider", "bandit", "royal ghost"})
+    has_log_bait_core = ("goblin barrel" in name_set and "princess" in name_set) or (
+        "goblin barrel" in name_set and spell_count >= 2 and cheap_cycle >= 2
+    )
+    has_hyper_bait = has_log_bait_core and cheap_cycle >= 3 and any(n in name_set for n in {"dart goblin", "goblin gang", "skeleton army"})
+    has_lava = "lava hound" in name_set or ("balloon" in name_set and "lava hound" in name_set)
+    has_siege = any(n in name_set for n in {"x bow", "x-bow", "mortar"})
+    has_split_lane = ("royal recruits" in name_set and "royal hogs" in name_set) or "three musketeers" in name_set
+    has_control_shell = any(n in name_set for n in {"graveyard", "miner"}) and building_count >= 1
+
+    if has_hyper_bait:
+        return "hyper_bait"
+    if has_log_bait_core:
+        return "log_bait"
+    if has_split_lane:
+        return "split_lane_pressure"
+    if has_siege:
+        return "siege"
+    if has_lava:
+        return "air_beatdown"
+    if has_bridge_spam_core:
+        return "bridge_spam"
+    if avg_elixir >= 4.1 and win_con_count >= 1:
+        return "beatdown"
+    if avg_elixir <= 3.2 and cheap_cycle >= 2 and win_con_count >= 1:
+        return "fast_cycle"
+    if has_control_shell or (building_count >= 1 and spell_count >= 2):
+        return "control_counterpush"
+    return "custom_offmeta"
+
+
+def archetype_matchup_counter_index(user_archetype: str, opponent_archetype: str) -> float:
+    if not opponent_archetype or opponent_archetype == "custom_offmeta":
+        return 0.0
+    return float(MATCHUP_COUNTER_PRIOR.get((user_archetype, opponent_archetype), 0.0))
+
+
 def build_feature_dict(
     cards: List[dict],
     tower_troop: str,
     deck_ids: List[int] | None = None,
     wild_slot_mode: str | None = None,
+    opponent_archetype: str | None = None,
 ) -> Dict[str, float]:
     md = [card_metadata(c) for c in cards]
     avg_elixir = sum((c.get("elixirCost") or 0) for c in cards) / max(len(cards), 1)
@@ -329,6 +427,9 @@ def build_feature_dict(
     evo_value, evo_active_count = compute_evo_ability_value(cards, wild_slot_mode or "")
     hero_value, hero_cost_sum, hero_active_count = compute_hero_champ_ability(cards, wild_slot_mode or "")
     wild_mode = normalize_wild_slot_mode(wild_slot_mode)
+    user_arch = detect_deck_archetype(cards, md, avg_elixir, sum(1 for m in md if m["is_win_condition"]))
+    opp_arch = normalize_archetype_label(opponent_archetype)
+    matchup_counter = archetype_matchup_counter_index(user_arch, opp_arch)
     feats = {
         "avg_elixir": avg_elixir,
         "win_con_count": sum(1 for m in md if m["is_win_condition"]),
@@ -353,7 +454,11 @@ def build_feature_dict(
         "hero_champ_ability_active_count": float(hero_active_count),
         "wild_mode_is_evo": 1.0 if wild_mode == "evo" else 0.0,
         "wild_mode_is_hero": 1.0 if wild_mode == "hero" else 0.0,
+        "matchup_counter_index": matchup_counter,
     }
+    for arch in ARCHETYPE_LABELS:
+        feats[f"user_arch_{arch}"] = 1.0 if user_arch == arch else 0.0
+        feats[f"opp_arch_{arch}"] = 1.0 if opp_arch == arch else 0.0
     tower = normalize_tower(tower_troop)
     feats["tower_tower_princess"] = 1.0 if tower == "tower_princess" else 0.0
     feats["tower_royal_chef"] = 1.0 if tower == "royal_chef" else 0.0
@@ -394,6 +499,27 @@ FEATURE_ORDER = [
     "hero_champ_ability_active_count",
     "wild_mode_is_evo",
     "wild_mode_is_hero",
+    "matchup_counter_index",
+    "user_arch_fast_cycle",
+    "user_arch_beatdown",
+    "user_arch_air_beatdown",
+    "user_arch_log_bait",
+    "user_arch_hyper_bait",
+    "user_arch_bridge_spam",
+    "user_arch_control_counterpush",
+    "user_arch_siege",
+    "user_arch_split_lane_pressure",
+    "user_arch_custom_offmeta",
+    "opp_arch_fast_cycle",
+    "opp_arch_beatdown",
+    "opp_arch_air_beatdown",
+    "opp_arch_log_bait",
+    "opp_arch_hyper_bait",
+    "opp_arch_bridge_spam",
+    "opp_arch_control_counterpush",
+    "opp_arch_siege",
+    "opp_arch_split_lane_pressure",
+    "opp_arch_custom_offmeta",
 ]
 
 
@@ -410,11 +536,12 @@ def build_feature_vector_from_ids(
     tower_troop: str,
     card_map: Dict[int, dict],
     wild_slot_mode: str | None = None,
+    opponent_archetype: str | None = None,
     feature_order: List[str] | None = None,
 ) -> Tuple[List[float], Dict[str, float], List[dict]]:
     cards = deck_from_ids(ids, card_map)
     if len(cards) != 8:
         raise ValueError("Deck must contain 8 valid cards.")
-    feats = build_feature_dict(cards, tower_troop, ids, wild_slot_mode)
+    feats = build_feature_dict(cards, tower_troop, ids, wild_slot_mode, opponent_archetype)
     order = feature_order or FEATURE_ORDER
     return vectorize(feats, order), feats, cards

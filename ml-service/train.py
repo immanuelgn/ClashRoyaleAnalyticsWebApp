@@ -8,7 +8,7 @@ import joblib
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 
-from db import init_db, load_feedback_rows
+from db import init_db, load_feedback_rows, normalize_opponent_archetype
 from feature_engineering import FEATURE_ORDER, build_feature_dict, load_cards, normalize_tower, vectorize
 from meta_priors import load_meta_decks
 
@@ -155,7 +155,8 @@ def build_feedback_training_set():
             continue
         stored_mode = str(r.get("wild_slot_mode") or "").strip().lower()
         wild_mode = stored_mode if stored_mode in {"evo", "hero"} else infer_wild_mode(card_by_id, ids)
-        feats = build_feature_dict(deck, normalize_tower(r["tower_troop"]), ids, wild_mode)
+        opp_arch = normalize_opponent_archetype(r.get("opponent_archetype"))
+        feats = build_feature_dict(deck, normalize_tower(r["tower_troop"]), ids, wild_mode, opp_arch)
         base = 58.0 if int(r["won"]) == 1 else 44.0
         cf = r.get("crowns_for")
         ca = r.get("crowns_against")
@@ -198,7 +199,7 @@ def main():
 
     joblib.dump(model, MODEL_PATH)
     meta = {
-        "modelVersion": "rf-v3-meta-prior-ability-mode",
+        "modelVersion": "rf-v4-matchup-archetype",
         "featureOrder": FEATURE_ORDER,
         "trainSamples": int(len(y)),
         "metaAnchorSamples": int(len(y_meta)),

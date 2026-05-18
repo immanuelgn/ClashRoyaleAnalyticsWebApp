@@ -404,21 +404,51 @@ const state = {
 };
 
 const OPP_ARCHETYPE_NORMALIZE = new Map([
-  ["cycle", "cycle"],
-  ["hog cycle", "cycle"],
+  ["cycle", "fast_cycle"],
+  ["fast cycle", "fast_cycle"],
+  ["hog cycle", "fast_cycle"],
+  ["drill cycle", "fast_cycle"],
+  ["xbow cycle", "fast_cycle"],
+  ["x-bow cycle", "fast_cycle"],
   ["beatdown", "beatdown"],
   ["air beatdown", "air_beatdown"],
   ["air_beatdown", "air_beatdown"],
   ["lava", "air_beatdown"],
   ["lava loon", "air_beatdown"],
   ["lavaloon", "air_beatdown"],
-  ["bait", "bait"],
-  ["log bait", "bait"],
-  ["control", "control"],
+  ["log bait", "log_bait"],
+  ["log_bait", "log_bait"],
+  ["classic log bait", "log_bait"],
+  ["hyper bait", "hyper_bait"],
+  ["hyper_bait", "hyper_bait"],
+  ["spam bait", "hyper_bait"],
+  ["bait", "log_bait"],
+  ["spell bait", "log_bait"],
+  ["control", "control_counterpush"],
+  ["control/counter-push", "control_counterpush"],
+  ["counterpush", "control_counterpush"],
+  ["counter push", "control_counterpush"],
+  ["splashyard", "control_counterpush"],
+  ["miner poison", "control_counterpush"],
   ["siege", "siege"],
   ["bridge spam", "bridge_spam"],
   ["bridge_spam", "bridge_spam"],
   ["bridgespam", "bridge_spam"],
+  ["split lane", "split_lane_pressure"],
+  ["split-lane", "split_lane_pressure"],
+  ["split_lane_pressure", "split_lane_pressure"],
+  ["recruits hogs", "split_lane_pressure"],
+  ["3m", "split_lane_pressure"],
+  ["three musketeers", "split_lane_pressure"],
+  ["no wincon", "midladder_no_wincon"],
+  ["no win condition", "midladder_no_wincon"],
+  ["quad tank", "midladder_overcommit"],
+  ["overcommit", "midladder_overcommit"],
+  ["spell turtle", "midladder_spell_turtle"],
+  ["pocket rocket", "midladder_spell_turtle"],
+  ["freeze trap", "midladder_freeze_trap"],
+  ["meta hodgepodge", "midladder_meta_hodgepodge"],
+  ["top deck copier", "midladder_meta_hodgepodge"],
   ["offmeta", "custom_offmeta"],
   ["custom", "custom_offmeta"],
   ["custom_offmeta", "custom_offmeta"]
@@ -1204,7 +1234,13 @@ async function analyzeDeck() {
     statusEl.textContent = "Analyzing deck...";
     const wildSlotCard = state.deck[1];
     const wildSlotMode = wildSlotCard ? getWildModeForCard(1, wildSlotCard) : null;
-    const data = await analyzePayload({ cardIds: cards.map((c) => c.id), towerTroop: state.selectedTowerTroop, wildSlotMode });
+    const oppArchetypeRaw = document.getElementById("mlOppArchetypeInput")?.value?.trim() || "";
+    const data = await analyzePayload({
+      cardIds: cards.map((c) => c.id),
+      towerTroop: state.selectedTowerTroop,
+      wildSlotMode,
+      opponentArchetype: normalizeOpponentArchetype(oppArchetypeRaw),
+    });
     state.latestAnalysis = data;
     renderAllAnalysis(data);
     await renderLearningStatus();
