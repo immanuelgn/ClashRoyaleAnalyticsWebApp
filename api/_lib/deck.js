@@ -4,6 +4,17 @@ const path = require("path");
 const CARDS = JSON.parse(
   fs.readFileSync(path.join(__dirname, "..", "..", "data", "cards.json"), "utf8")
 );
+const CARD_DATA_OVERRIDES = {
+  27000001: { elixirCost: 5, role: "Spawner" }, // Goblin Hut
+  28000006: { elixirCost: 1, role: "Spell" },   // Mirror
+  28000017: { role: "Spell" },                  // Giant Snowball
+};
+
+function withCardDataOverrides(card) {
+  const id = Number(card?.id || 0);
+  const fix = CARD_DATA_OVERRIDES[id];
+  return fix ? { ...card, ...fix } : card;
+}
 
 const EVO_CARD_SLUGS = new Set([
   "archers", "baby-dragon", "barbarians", "bats", "battle-ram",
@@ -122,9 +133,18 @@ function normalizeCardNameForMatch(text) {
   return String(text || "").toLowerCase().replace(/\./g, "").replace(/\s+/g, " ").trim();
 }
 
-const LIGHT_SPELL_NAMES = new Set(["zap", "the log", "log", "snowball", "arrows", "barbarian barrel", "tornado"]);
+const LIGHT_SPELL_NAMES = new Set(["zap", "the log", "log", "snowball", "giant snowball", "arrows", "barbarian barrel", "tornado"]);
 const HEAVY_SPELL_NAMES = new Set(["fireball", "poison", "rocket", "lightning"]);
-const OTHER_SPELL_NAMES = new Set(["rage", "freeze", "clone", "mirror", "earthquake"]);
+const OTHER_SPELL_NAMES = new Set([
+  "rage", "freeze", "clone", "mirror", "earthquake",
+  "royal delivery", "void", "goblin curse", "vines", "spirit empress", "graveyard"
+]);
+const SPELL_WIN_CON_NAMES = new Set(["goblin barrel", "graveyard"]);
+const WIN_CONDITION_NAMES = new Set([
+  "hog rider", "giant", "golem", "balloon", "goblin barrel", "x-bow", "mortar",
+  "miner", "ram rider", "battle ram", "goblin drill", "lava hound", "electro giant",
+  "royal giant", "royal hogs", "graveyard", "wall breakers"
+]);
 
 function isSpellCardByName(name) {
   return LIGHT_SPELL_NAMES.has(name) || HEAVY_SPELL_NAMES.has(name) || OTHER_SPELL_NAMES.has(name);
@@ -157,7 +177,8 @@ function normalizeTowerTroop(towerTroop) {
   return "tower_princess";
 }
 
-function withFlags(card) {
+function withFlags(inputCard) {
+  const card = withCardDataOverrides(inputCard);
   const slug = slugify(card.name);
   const isChampion = (card.rarity || "").toLowerCase() === "champion" || CHAMPION_CARD_SLUGS.has(slug);
   const isHero = HERO_CARD_SLUGS.has(slug);
@@ -256,17 +277,22 @@ function getMetadata(card) {
   const exactName = normalizeCardNameForMatch(card.name);
   const role = (card.role || "Support").toLowerCase();
   const attackType = (card.attackType || "Ground").toLowerCase();
-  const isWinCondition = role === "wincondition" || /hog|giant|golem|balloon|barrel|x-bow|mortar|miner|ram rider|battle ram|goblin drill/.test(name);
+  const winConByName = WIN_CONDITION_NAMES.has(exactName);
   const isBuilding = isDefensiveStructureCard(card, role, name);
   const isLightSpell = LIGHT_SPELL_NAMES.has(exactName);
   const isHeavySpell = HEAVY_SPELL_NAMES.has(exactName);
+  const isOtherSpell = OTHER_SPELL_NAMES.has(exactName);
+  const isSpell = isLightSpell || isHeavySpell || isOtherSpell || role === "spell";
+  const isWinCondition = isSpell
+    ? SPELL_WIN_CON_NAMES.has(exactName)
+    : (role === "wincondition" || winConByName);
   const isCycleCard = (card.elixirCost || 0) <= 2 || role === "cycle";
   const canHitAir = attackType === "both" || attackType === "air" || /musketeer|archers|baby dragon|minions|bats|electro wizard|phoenix|dart goblin|spear goblins|hunter|wizard|witch|executioner|magic archer|electro dragon|mega minion|inferno dragon|minion horde|firecracker|zappies|little prince/.test(name);
   const isTank = (card.elixirCost || 0) >= 5 || /giant|golem|pekka|lava hound|electro giant|royal giant/.test(name);
   const isSplash = /wizard|baby dragon|valkyrie|bowler|bomb|executioner|firecracker|witch|poison|fireball|arrows|zap|snowball|rocket|lightning/.test(name);
   const isReset = /zap|electro wizard|electro spirit|zappies/.test(name);
 
-  return { isWinCondition, isBuilding, isLightSpell, isHeavySpell, isCycleCard, canHitAir, isTank, isSplash, isReset };
+  return { isWinCondition, isBuilding, isLightSpell, isHeavySpell, isOtherSpell, isSpell, isCycleCard, canHitAir, isTank, isSplash, isReset };
 }
 
 function detectArchetype(cards, metadata, avgElixir, winCons) {
@@ -354,7 +380,7 @@ function isProtectedMetaShell(cards) {
 }
 
 function buildMlFeatures(cards, metadata, avgElixir, towerTroop) {
-  const spellCount = cards.filter(c => c.role === "Spell").length;
+  const spellCount = metadata.filter(m => m.isSpell).length;
   const lightSpellCount = metadata.filter(m => m.isLightSpell).length;
   const heavySpellCount = metadata.filter(m => m.isHeavySpell).length;
   const winConCount = metadata.filter(m => m.isWinCondition).length;
@@ -421,7 +447,10 @@ function buildMlForecast(features, score, archetypeConfidence) {
 function suggestMlUpgrades(cards, towerTroop, baselineWinRate) {
   if (isProtectedMetaShell(cards)) return [];
 
-  const map = new Map(CARDS.map(c => [c.id, c]));
+  const map = new Map(CARDS.map((c) => {
+    const fixed = withCardDataOverrides(c);
+    return [fixed.id, fixed];
+  }));
   const deckIds = cards.map(c => c.id);
   const deckSet = new Set(deckIds);
   const candidates = CARDS.filter(c => !deckSet.has(c.id)).slice(0, 80);

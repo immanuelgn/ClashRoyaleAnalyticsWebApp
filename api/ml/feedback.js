@@ -19,6 +19,7 @@ module.exports = async function handler(req, res) {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
     const cardIds = Array.isArray(body.cardIds) ? body.cardIds.map(Number) : [];
     const towerTroop = body.towerTroop || "tower_princess";
+    const wildSlotMode = body.wildSlotMode === "hero" ? "hero" : (body.wildSlotMode === "evo" ? "evo" : null);
     const won = !!body.won;
     const crownsFor = Number.isFinite(Number(body.crownsFor)) ? Number(body.crownsFor) : null;
     const crownsAgainst = Number.isFinite(Number(body.crownsAgainst)) ? Number(body.crownsAgainst) : null;
@@ -38,6 +39,7 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         cardIds,
         towerTroop,
+        wildSlotMode,
         won,
         crownsFor,
         crownsAgainst,

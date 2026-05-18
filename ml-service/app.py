@@ -108,6 +108,7 @@ class PredictRequest(BaseModel):
 class FeedbackRequest(BaseModel):
     cardIds: List[int]
     towerTroop: str = "tower_princess"
+    wildSlotMode: Optional[str] = None
     won: bool
     crownsFor: Optional[int] = None
     crownsAgainst: Optional[int] = None
@@ -338,6 +339,7 @@ def predict(req: PredictRequest):
     log_analysis_event(
         unique,
         normalize_tower(req.towerTroop),
+        req.wildSlotMode,
         response["mlForecast"]["predictedWinRate"],
         response["mlForecast"]["confidence"],
         req.scoreProxy,
@@ -357,6 +359,7 @@ def feedback(req: FeedbackRequest):
     add_battle_feedback(
         unique,
         normalize_tower(req.towerTroop),
+        req.wildSlotMode,
         bool(req.won),
         req.crownsFor,
         req.crownsAgainst,

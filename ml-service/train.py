@@ -153,7 +153,8 @@ def build_feedback_training_set():
         deck = [card_by_id[i] for i in ids if i in card_by_id]
         if len(deck) != 8:
             continue
-        wild_mode = infer_wild_mode(card_by_id, ids)
+        stored_mode = str(r.get("wild_slot_mode") or "").strip().lower()
+        wild_mode = stored_mode if stored_mode in {"evo", "hero"} else infer_wild_mode(card_by_id, ids)
         feats = build_feature_dict(deck, normalize_tower(r["tower_troop"]), ids, wild_mode)
         base = 58.0 if int(r["won"]) == 1 else 44.0
         cf = r.get("crowns_for")

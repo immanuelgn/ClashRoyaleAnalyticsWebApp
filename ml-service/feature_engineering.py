@@ -9,6 +9,11 @@ from meta_priors import compute_meta_features, load_meta_decks
 ROOT = Path(__file__).resolve().parents[1]
 CARDS_PATH = ROOT / "data" / "cards.json"
 META_DECKS = load_meta_decks()
+CARD_DATA_OVERRIDES = {
+    27000001: {"elixirCost": 5, "role": "Spawner"},  # Goblin Hut
+    28000006: {"elixirCost": 1, "role": "Spell"},    # Mirror
+    28000017: {"role": "Spell"},                     # Giant Snowball
+}
 
 DEFENSIVE_BUILDING_IDS = {
     27000000,  # Cannon
@@ -25,8 +30,15 @@ DEFENSIVE_BUILDING_IDS = {
     27000014,  # Elixir Collector
 }
 
-LIGHT_SPELL_NAMES = {"zap", "the log", "log", "snowball", "arrows", "barbarian barrel", "tornado"}
+LIGHT_SPELL_NAMES = {"zap", "the log", "log", "snowball", "giant snowball", "arrows", "barbarian barrel", "tornado"}
 HEAVY_SPELL_NAMES = {"fireball", "poison", "rocket", "lightning"}
+OTHER_SPELL_NAMES = {"rage", "freeze", "clone", "mirror", "earthquake", "royal delivery", "void", "goblin curse", "vines", "spirit empress", "graveyard"}
+SPELL_WIN_CON_NAMES = {"goblin barrel", "graveyard"}
+WIN_CONDITION_NAMES = {
+    "hog rider", "giant", "golem", "balloon", "goblin barrel", "x-bow", "mortar",
+    "miner", "ram rider", "battle ram", "goblin drill", "lava hound", "electro giant",
+    "royal giant", "royal hogs", "graveyard", "wall breakers",
+}
 
 EVO_CARD_SLUGS = {
     "archers", "baby-dragon", "barbarians", "bats", "battle-ram",
@@ -133,7 +145,13 @@ def slugify(name: str) -> str:
 
 def load_cards() -> List[dict]:
     with open(CARDS_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
+        raw = json.load(f)
+    out = []
+    for c in raw:
+        cid = int(c.get("id") or 0)
+        fix = CARD_DATA_OVERRIDES.get(cid)
+        out.append({**c, **fix} if fix else c)
+    return out
 
 
 def normalize_tower(tower_troop: str | None) -> str:
@@ -172,13 +190,15 @@ def card_metadata(card: dict) -> dict:
             ]
         )
     )
+    is_spell = exact_name in LIGHT_SPELL_NAMES or exact_name in HEAVY_SPELL_NAMES or exact_name in OTHER_SPELL_NAMES or role == "spell"
+    win_con_by_name = exact_name in WIN_CONDITION_NAMES
     return {
-        "is_win_condition": role == "wincondition" or any(
-            k in name for k in ["hog", "giant", "golem", "balloon", "barrel", "x-bow", "mortar", "miner", "ram rider", "battle ram", "goblin drill"]
-        ),
+        "is_win_condition": (exact_name in SPELL_WIN_CON_NAMES) if is_spell else (role == "wincondition" or win_con_by_name),
         "is_building": is_building,
         "is_light_spell": exact_name in LIGHT_SPELL_NAMES,
         "is_heavy_spell": exact_name in HEAVY_SPELL_NAMES,
+        "is_other_spell": exact_name in OTHER_SPELL_NAMES,
+        "is_spell": is_spell,
         "is_cycle": (card.get("elixirCost") or 0) <= 2 or role == "cycle",
         "can_hit_air": attack_type in {"both", "air"} or any(
             k in name
@@ -315,7 +335,7 @@ def build_feature_dict(
         "building_count": sum(1 for m in md if m["is_building"]),
         "light_spell_count": sum(1 for m in md if m["is_light_spell"]),
         "heavy_spell_count": sum(1 for m in md if m["is_heavy_spell"]),
-        "spell_count": sum(1 for c in cards if (c.get("role") or "").lower() == "spell"),
+        "spell_count": sum(1 for m in md if m["is_spell"]),
         "air_counters": sum(1 for m in md if m["can_hit_air"]),
         "splash_count": sum(1 for m in md if m["is_splash"]),
         "cycle_cards": sum(1 for m in md if m["is_cycle"]),

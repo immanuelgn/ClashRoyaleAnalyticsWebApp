@@ -21,12 +21,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="style.css?v=20260518g" />
+  <link rel="stylesheet" href="style.css?v=20260518i" />
 </head>
 <body>
   <main class="container">
     <h1>RoyalePro</h1>
-    <p class="sub">Drag cards into 8 deck slots. Special slots follow the current Evo/Hero/Wild rules.</p>
+    <p class="sub">Build an 8-card deck, run analysis, play real matches, and log outcomes so the ML gets smarter over time.</p>
 
     <section class="panel">
       <h2>Deck Builder</h2>
@@ -170,6 +170,49 @@
           </div>
         </section>
 
+        <section class="panel performance-priority">
+          <h2>Performance Outlook</h2>
+          <p class="sub">
+            This is where the app learns from real matches. Analyze, play, submit result, and repeat.
+          </p>
+          <div id="mlForecastVisual" class="ml-forecast-visual"></div>
+          <p id="mlForecastLine"></p>
+          <div class="feedback-row">
+            <span class="feedback-label">Log Match Result</span>
+            <button id="mlWonBtn" class="feedback-btn good">I Won</button>
+            <button id="mlLostBtn" class="feedback-btn bad">I Lost</button>
+          </div>
+          <p class="feedback-help">
+            Quick tester flow:
+            1) Build and analyze a full deck.
+            2) Play a real match with that deck.
+            3) Tap <strong>I Won</strong> or <strong>I Lost</strong>.
+            4) Add optional opponent details to improve ML faster.
+          </p>
+          <div class="feedback-grid">
+            <input id="mlOppArchetypeInput" type="text" placeholder="Opponent archetype (optional: cycle, beatdown, bait, siege, control, bridge spam, custom_offmeta)" list="oppArchetypeOptions" />
+            <input id="mlTrophiesInput" type="number" min="0" max="10000" placeholder="Trophies (optional)" />
+            <input id="mlCrownsForInput" type="number" min="0" max="3" placeholder="Your Crowns (0-3)" />
+            <input id="mlCrownsAgainstInput" type="number" min="0" max="3" placeholder="Opponent Crowns (0-3)" />
+          </div>
+          <datalist id="oppArchetypeOptions">
+            <option value="cycle"></option>
+            <option value="beatdown"></option>
+            <option value="bait"></option>
+            <option value="control"></option>
+            <option value="siege"></option>
+            <option value="bridge_spam"></option>
+            <option value="air_beatdown"></option>
+            <option value="custom_offmeta"></option>
+          </datalist>
+          <p id="mlFeedbackLine" class="sub"></p>
+          <p id="learningStatusLine" class="sub"></p>
+          <ul id="mlDriversList"></ul>
+          <h3>Smart Upgrade Suggestions</h3>
+          <div id="mlSuggestionsVisual" class="swap-board"></div>
+          <ul id="mlSuggestionsList"></ul>
+        </section>
+
         <section class="panel">
           <h2>Matchup Simulator</h2>
           <p class="sub">Compare your deck against meta-style presets.</p>
@@ -230,43 +273,6 @@
         <ul id="deltaBreakdown"></ul>
       </section>
 
-      <section class="panel analysis-block span-6">
-        <h2 class="section-label">Performance Outlook</h2>
-        <div id="mlForecastVisual" class="ml-forecast-visual"></div>
-        <p id="mlForecastLine"></p>
-        <div class="feedback-row">
-          <span class="feedback-label">Match Result Feedback</span>
-          <button id="mlWonBtn" class="feedback-btn good">I Won</button>
-          <button id="mlLostBtn" class="feedback-btn bad">I Lost</button>
-        </div>
-        <p class="feedback-help">
-          How to log results: Analyze your deck, play a real match, then tap <strong>I Won</strong> or <strong>I Lost</strong> once per game.
-          Add optional match details below to improve ML accuracy faster. <strong>Your Crowns</strong> means crowns you took; <strong>Opponent Crowns</strong> means crowns they took.
-        </p>
-        <div class="feedback-grid">
-          <input id="mlOppArchetypeInput" type="text" placeholder="Opponent archetype (optional: cycle, beatdown, bait, siege, control, bridge spam, custom_offmeta)" list="oppArchetypeOptions" />
-          <input id="mlTrophiesInput" type="number" min="0" max="10000" placeholder="Trophies (optional)" />
-          <input id="mlCrownsForInput" type="number" min="0" max="3" placeholder="Your Crowns (0-3)" />
-          <input id="mlCrownsAgainstInput" type="number" min="0" max="3" placeholder="Opponent Crowns (0-3)" />
-        </div>
-        <datalist id="oppArchetypeOptions">
-          <option value="cycle"></option>
-          <option value="beatdown"></option>
-          <option value="bait"></option>
-          <option value="control"></option>
-          <option value="siege"></option>
-          <option value="bridge_spam"></option>
-          <option value="air_beatdown"></option>
-          <option value="custom_offmeta"></option>
-        </datalist>
-        <p id="mlFeedbackLine" class="sub"></p>
-        <p id="learningStatusLine" class="sub"></p>
-        <ul id="mlDriversList"></ul>
-        <h3>Smart Upgrade Suggestions</h3>
-        <div id="mlSuggestionsVisual" class="swap-board"></div>
-        <ul id="mlSuggestionsList"></ul>
-      </section>
-
       <section class="panel hidden analysis-block span-6" id="weaknessPanel">
         <h2 class="section-label">Weakness Profiler</h2>
         <div class="risk-grid" id="riskGrid">
@@ -310,7 +316,7 @@
   </main>
 
   <script src="config.js?v=20260502f"></script>
-  <script src="script.js?v=20260518h"></script>
+  <script src="script.js?v=20260518i"></script>
 </body>
 </html>
 

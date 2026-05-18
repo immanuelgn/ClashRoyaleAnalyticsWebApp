@@ -98,12 +98,13 @@ h1, h2 {
 .analysis-mosaic {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 18px;
+  gap: 16px;
   grid-auto-flow: dense;
   align-items: start;
   margin: 8px 0 24px;
 }
 .analysis-mosaic .analysis-block { margin-top: 0; }
+.analysis-mosaic .panel { margin: 0; }
 .span-12 { grid-column: span 12; }
 .span-8 { grid-column: span 8; }
 .span-6 { grid-column: span 6; }
@@ -136,8 +137,9 @@ h1, h2 {
 .left-column,
 .right-column {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
+.right-column .panel { margin: 0; }
 .left-column .panel:first-child {
   position: static;
   min-height: calc(100vh - 140px);
@@ -815,7 +817,7 @@ ul { padding-left: 20px; }
 .feedback-help {
   margin: 2px 0 8px;
   font-size: 12px;
-  line-height: 1.35;
+  line-height: 1.45;
   color: #bfd7f5;
 }
 .feedback-help strong {
@@ -851,6 +853,18 @@ ul { padding-left: 20px; }
   border: 1px solid #35557f;
   background: rgba(9, 20, 42, 0.82);
   color: #deebff;
+}
+
+.performance-priority {
+  border-color: #3a5f8f;
+}
+
+.performance-priority .sub {
+  margin: 0 0 6px;
+}
+
+.performance-priority h3 {
+  margin: 8px 0 4px;
 }
 .drift-meter {
   margin: 6px 0 10px;

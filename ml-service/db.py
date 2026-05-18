@@ -62,6 +62,7 @@ def init_db() -> None:
                   card_ids_json JSONB NOT NULL,
                   deck_fingerprint TEXT,
                   tower_troop TEXT NOT NULL,
+                  wild_slot_mode TEXT,
                   predicted_win_rate DOUBLE PRECISION,
                   confidence DOUBLE PRECISION,
                   score_proxy DOUBLE PRECISION,
@@ -81,6 +82,7 @@ def init_db() -> None:
                   card_ids_json JSONB NOT NULL,
                   deck_fingerprint TEXT,
                   tower_troop TEXT NOT NULL,
+                  wild_slot_mode TEXT,
                   won INTEGER NOT NULL,
                   crowns_for INTEGER,
                   crowns_against INTEGER,
@@ -98,12 +100,14 @@ def init_db() -> None:
             cur.execute("ALTER TABLE analysis_events ADD COLUMN IF NOT EXISTS source TEXT")
             cur.execute("ALTER TABLE analysis_events ADD COLUMN IF NOT EXISTS meta_similarity DOUBLE PRECISION")
             cur.execute("ALTER TABLE analysis_events ADD COLUMN IF NOT EXISTS meta_weighted_win_rate DOUBLE PRECISION")
+            cur.execute("ALTER TABLE analysis_events ADD COLUMN IF NOT EXISTS wild_slot_mode TEXT")
 
             cur.execute("ALTER TABLE battle_feedback ADD COLUMN IF NOT EXISTS deck_fingerprint TEXT")
             cur.execute("ALTER TABLE battle_feedback ADD COLUMN IF NOT EXISTS opponent_archetype TEXT")
             cur.execute("ALTER TABLE battle_feedback ADD COLUMN IF NOT EXISTS game_mode TEXT")
             cur.execute("ALTER TABLE battle_feedback ADD COLUMN IF NOT EXISTS trophies INTEGER")
             cur.execute("ALTER TABLE battle_feedback ADD COLUMN IF NOT EXISTS patch_version TEXT")
+            cur.execute("ALTER TABLE battle_feedback ADD COLUMN IF NOT EXISTS wild_slot_mode TEXT")
 
             cur.execute(
                 """
@@ -242,6 +246,26 @@ def init_db() -> None:
                 $$;
                 """
             )
+
+            cur.execute(
+                """
+                DO $$
+                BEGIN
+                  IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint
+                    WHERE conname = 'analysis_events_wild_slot_mode_ck'
+                  ) THEN
+                    ALTER TABLE analysis_events
+                    ADD CONSTRAINT analysis_events_wild_slot_mode_ck
+                    CHECK (
+                      wild_slot_mode IS NULL
+                      OR wild_slot_mode IN ('evo', 'hero')
+                    ) NOT VALID;
+                  END IF;
+                END
+                $$;
+                """
+            )
             cur.execute(
                 """
                 DO $$
@@ -253,6 +277,26 @@ def init_db() -> None:
                     ALTER TABLE analysis_events
                     ADD CONSTRAINT analysis_events_pred_wr_range_ck
                     CHECK (predicted_win_rate IS NULL OR (predicted_win_rate >= 0 AND predicted_win_rate <= 100)) NOT VALID;
+                  END IF;
+                END
+                $$;
+                """
+            )
+
+            cur.execute(
+                """
+                DO $$
+                BEGIN
+                  IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint
+                    WHERE conname = 'battle_feedback_wild_slot_mode_ck'
+                  ) THEN
+                    ALTER TABLE battle_feedback
+                    ADD CONSTRAINT battle_feedback_wild_slot_mode_ck
+                    CHECK (
+                      wild_slot_mode IS NULL
+                      OR wild_slot_mode IN ('evo', 'hero')
+                    ) NOT VALID;
                   END IF;
                 END
                 $$;
@@ -428,6 +472,7 @@ def init_db() -> None:
 def log_analysis_event(
     card_ids: List[int],
     tower_troop: str,
+    wild_slot_mode: Optional[str],
     predicted_win_rate: float,
     confidence: float,
     score_proxy: Optional[float] = None,
@@ -441,14 +486,15 @@ def log_analysis_event(
             cur.execute(
                 """
                 INSERT INTO analysis_events (
-                  card_ids_json, tower_troop, predicted_win_rate, confidence, score_proxy,
+                  card_ids_json, tower_troop, wild_slot_mode, predicted_win_rate, confidence, score_proxy,
                   model_version, source, meta_similarity, meta_weighted_win_rate
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     json.dumps(card_ids),
                     tower_troop,
+                    (wild_slot_mode or "").strip().lower() if (wild_slot_mode or "").strip().lower() in {"evo", "hero"} else None,
                     float(predicted_win_rate),
                     float(confidence),
                     None if score_proxy is None else float(score_proxy),
@@ -545,7 +591,7 @@ def get_learning_stats() -> Dict:
 
             cur.execute(
                 """
-                SELECT created_at, won, tower_troop
+                SELECT created_at, won, tower_troop, wild_slot_mode
                 FROM battle_feedback
                 ORDER BY id DESC
                 LIMIT 5
@@ -567,6 +613,7 @@ def get_learning_stats() -> Dict:
 def add_battle_feedback(
     card_ids: List[int],
     tower_troop: str,
+    wild_slot_mode: Optional[str],
     won: bool,
     crowns_for: Optional[int],
     crowns_against: Optional[int],
@@ -581,14 +628,15 @@ def add_battle_feedback(
             cur.execute(
                 """
                 INSERT INTO battle_feedback (
-                  card_ids_json, tower_troop, won, crowns_for, crowns_against,
+                  card_ids_json, tower_troop, wild_slot_mode, won, crowns_for, crowns_against,
                   opponent_archetype, game_mode, trophies, patch_version, notes
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
                     json.dumps(card_ids),
                     tower_troop,
+                    (wild_slot_mode or "").strip().lower() if (wild_slot_mode or "").strip().lower() in {"evo", "hero"} else None,
                     1 if won else 0,
                     crowns_for,
                     crowns_against,
@@ -607,7 +655,7 @@ def load_feedback_rows() -> List[Dict]:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT card_ids_json, tower_troop, won, crowns_for, crowns_against, opponent_archetype, game_mode, trophies, patch_version
+                SELECT card_ids_json, tower_troop, wild_slot_mode, won, crowns_for, crowns_against, opponent_archetype, game_mode, trophies, patch_version
                 FROM battle_feedback
                 ORDER BY id DESC
                 LIMIT 50000
@@ -631,6 +679,7 @@ def load_feedback_rows() -> List[Dict]:
             {
                 "card_ids": ids,
                 "tower_troop": r.get("tower_troop"),
+                "wild_slot_mode": r.get("wild_slot_mode"),
                 "won": int(r.get("won") or 0),
                 "crowns_for": r.get("crowns_for"),
                 "crowns_against": r.get("crowns_against"),

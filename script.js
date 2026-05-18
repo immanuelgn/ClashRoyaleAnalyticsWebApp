@@ -1254,9 +1254,12 @@ async function submitMlFeedback(won) {
   const line = document.getElementById("mlFeedbackLine");
   if (line) line.textContent = "Saving feedback...";
   try {
+    const wildSlotCard = state.deck[1];
+    const wildSlotMode = wildSlotCard ? getWildModeForCard(1, wildSlotCard) : null;
     const payload = {
       cardIds: cards.map((c) => c.id),
       towerTroop: state.selectedTowerTroop,
+      wildSlotMode,
       won: !!won,
       crownsFor: Number.isFinite(crownsFor) ? Math.max(0, Math.min(3, crownsFor)) : null,
       crownsAgainst: Number.isFinite(crownsAgainst) ? Math.max(0, Math.min(3, crownsAgainst)) : null,
