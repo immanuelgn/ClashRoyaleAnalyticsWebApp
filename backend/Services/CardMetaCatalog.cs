@@ -69,7 +69,7 @@ namespace ClashRoyaleMetaAnalytics.Services
             "electro-dragon", "executioner", "firecracker", "furnace", "giant-snowball", "goblin-barrel",
             "goblin-cage", "goblin-drill", "goblin-giant", "hunter", "ice-spirit", "inferno-dragon",
             "knight", "lumberjack", "mega-knight", "mortar", "musketeer", "pekka", "royal-ghost",
-            "royal-giant", "royal-hogs", "royal-recruits", "skeleton-army", "skeleton-barrel", "skeletons",
+            "royal-giant", "royal-hogs", "royal-recruits", "skeleton-army", "skeleton-barrel", "skeletons", "minion-horde",
             "tesla", "the-log", "valkyrie", "wall-breakers", "witch", "wizard", "x-bow", "zap"
         };
 
@@ -90,7 +90,8 @@ namespace ClashRoyaleMetaAnalytics.Services
             ["barbarians"] = "https://vignette.wikia.nocookie.net/clashroyale/images/5/53/Evolved_Barbarians_card_render.png/revision/latest/scale-to-width-down/256?cb=20230704032749",
             ["battle ram"] = "https://vignette.wikia.nocookie.net/clashroyale/images/a/a0/Evolved_Battle_Ram_card_render.png/revision/latest/scale-to-width-down/256?cb=20240819084841",
             ["cannon"] = "https://vignette.wikia.nocookie.net/clashroyale/images/b/b0/Evolved_Cannon_card_render.png/revision/latest/scale-to-width-down/256?cb=20241118041509",
-            ["baby dragon"] = "https://vignette.wikia.nocookie.net/clashroyale/images/8/87/Evolved_Baby_Dragon_card_render.png/revision/latest/scale-to-width-down/256?cb=20250505090244"
+            ["baby dragon"] = "https://vignette.wikia.nocookie.net/clashroyale/images/8/87/Evolved_Baby_Dragon_card_render.png/revision/latest/scale-to-width-down/256?cb=20250505090244",
+            ["minion horde"] = "https://cdns3.royaleapi.com/static/img/blog/2026-04-season-82/evo-minion-horde/v1-81a87e66/evo-minion-horde-a-288-005.jpg"
         };
 
         private static readonly HashSet<string> HeroSlugs = new(StringComparer.OrdinalIgnoreCase)

@@ -73,6 +73,13 @@ const HERO_ART_OVERRIDES = {
   ]
 };
 
+const EVO_ART_OVERRIDES = {
+  "Minion Horde": [
+    "https://cdns3.royaleapi.com/static/img/blog/2026-04-season-82/evo-minion-horde/v1-81a87e66/evo-minion-horde-a-288-005.jpg",
+    "https://cdns3.royaleapi.com/cdn-cgi/image/width=768,height=768,fit=cover,quality=80,format=auto,onerror=redirect/static/img/blog/2026-04-season-82/evo-minion-horde/v1-81a87e66/evo-minion-horde-a-288-005.jpg"
+  ]
+};
+
 const SLOT_RULES = [
   { id: 0, type: "evo", label: "Slot 1 - Evo Only" },
   { id: 1, type: "wild", label: "Slot 2 - Wild (Evo/Hero/Champion)" },
@@ -443,6 +450,7 @@ function getDisplayImageFallbacks(card, slotType, slotIndex = -1) {
   };
 
   if (slotType === "evo") {
+    for (const url of (EVO_ART_OVERRIDES[card.name] || [])) push(url);
     push(`${ASSET_VARIANT_BASE}${slug}-ev1.png`);
     push(`${ASSET_VARIANT_BASE}${slug}-hero-ev1.png`);
     push(card.evoIconUrl);
@@ -467,6 +475,7 @@ function getDisplayImageFallbacks(card, slotType, slotIndex = -1) {
       push(base);
       return list;
     }
+    for (const url of (EVO_ART_OVERRIDES[card.name] || [])) push(url);
     push(`${ASSET_VARIANT_BASE}${slug}-ev1.png`);
     push(`${ASSET_VARIANT_BASE}${slug}-hero-ev1.png`);
     push(card.evoIconUrl);

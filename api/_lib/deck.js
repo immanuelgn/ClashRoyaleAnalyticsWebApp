@@ -24,6 +24,9 @@ const HERO_CARD_SLUGS = new Set([
 ]);
 
 const EVO_FORCE_OFF_SLUGS = new Set(["the-log"]);
+const EVO_ICON_OVERRIDES = {
+  "minion-horde": "https://cdns3.royaleapi.com/static/img/blog/2026-04-season-82/evo-minion-horde/v1-81a87e66/evo-minion-horde-a-288-005.jpg"
+};
 
 const DEFENSIVE_BUILDING_IDS = new Set([
   27000000, // Cannon
@@ -97,7 +100,7 @@ function withFlags(card) {
     ...card,
     iconUrls: { medium: `https://royaleapi.github.io/cr-api-assets/cards/${slug}.png` },
     heroIconUrl: `https://royaleapi.github.io/cr-api-assets/cards/${slug}-hero.png`,
-    evoIconUrl: `https://royaleapi.github.io/cr-api-assets/cards/${slug}-ev1.png`,
+    evoIconUrl: EVO_ICON_OVERRIDES[slug] || `https://royaleapi.github.io/cr-api-assets/cards/${slug}-ev1.png`,
     isEvolution,
     isHero,
     isChampion,
