@@ -191,7 +191,7 @@ def main():
         max_depth=14,
         min_samples_leaf=2,
         random_state=42,
-        n_jobs=-1,
+        n_jobs=1,
     )
     model.fit(X, y)
 
