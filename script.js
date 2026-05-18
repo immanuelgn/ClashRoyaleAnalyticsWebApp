@@ -496,8 +496,11 @@ function normalizeCardFlags(cards) {
     const isChampion = !!c.isChampion || rarity === "champion" || CHAMPION_CARD_SLUGS.has(slug);
     const isHero = HERO_CARD_SLUGS.has(slug);
     const isEvolution = EVO_CARD_SLUGS.has(slug) && !EVO_FORCE_OFF_SLUGS.has(slug);
-    const allowedSlots = [];
-    if (!isEvolution && !isHero && !isChampion) allowedSlots.push("normal");
+    const allowedSlots = ["normal"];
+    if (isChampion) {
+      // Champions are restricted to Hero/Champion or Wild slots.
+      allowedSlots.length = 0;
+    }
     if (isEvolution) allowedSlots.push("evo");
     if (isHero || isChampion) allowedSlots.push("hero");
     if (isEvolution || isHero || isChampion) allowedSlots.push("wild");
@@ -1102,10 +1105,8 @@ function validateCardForSlot(card, slotType, deckState) {
   const rarity = String(card?.rarity || "").toLowerCase();
   const slug = toCardSlug(card?.name || "");
   const isChamp = !!card?.isChampion || rarity === "champion" || CHAMPION_CARD_SLUGS.has(slug);
-  const isHero = !!card?.isHero || HERO_CARD_SLUGS.has(slug);
-  const isEvo = !!card?.isEvolution || (EVO_CARD_SLUGS.has(slug) && !EVO_FORCE_OFF_SLUGS.has(slug));
-  if (slotType === "normal" && (isChamp || isHero || isEvo)) {
-    return { ok: false, message: `"${card.name}" is special and must be in Evo/Wild/Hero slots.` };
+  if (slotType === "normal" && isChamp) {
+    return { ok: false, message: `"${card.name}" is a Champion and must be in Hero/Champion or Wild slot.` };
   }
   const allowed = Array.isArray(card.allowedSlots) ? card.allowedSlots : ["normal"];
   if (!allowed.includes(slotType)) {

@@ -162,8 +162,11 @@ function withFlags(card) {
   const isChampion = (card.rarity || "").toLowerCase() === "champion" || CHAMPION_CARD_SLUGS.has(slug);
   const isHero = HERO_CARD_SLUGS.has(slug);
   const isEvolution = EVO_CARD_SLUGS.has(slug) && !EVO_FORCE_OFF_SLUGS.has(slug);
-  const allowedSlots = [];
-  if (!isEvolution && !isHero && !isChampion) allowedSlots.push("normal");
+  const allowedSlots = ["normal"];
+  if (isChampion) {
+    // Champions are restricted to Hero/Champion or Wild slots.
+    allowedSlots.length = 0;
+  }
   if (isEvolution) allowedSlots.push("evo");
   if (isHero || isChampion) allowedSlots.push("hero");
   if (isEvolution || isHero || isChampion) allowedSlots.push("wild");
