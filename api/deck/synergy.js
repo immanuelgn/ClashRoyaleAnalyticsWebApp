@@ -1,10 +1,11 @@
 const { analyzeDeck } = require("../_lib/deck");
+const { getMlServiceBase } = require("../_lib/mlService");
 
 async function getMlPrediction(cardIds, towerTroop, scoreProxy) {
-  const base = process.env.ML_SERVICE_URL;
+  const base = getMlServiceBase();
   if (!base) return null;
   try {
-    const url = `${String(base).replace(/\/+$/, "")}/predict`;
+    const url = `${base}/predict`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
