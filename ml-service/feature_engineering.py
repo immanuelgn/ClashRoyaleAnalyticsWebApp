@@ -83,6 +83,36 @@ MATCHUP_COUNTER_PRIOR = {
     ("siege", "beatdown"): -0.5,
     ("split_lane_pressure", "beatdown"): 0.3,
 }
+TOWER_PROFILE = {
+    "tower_princess": {
+        "single_target": 0.55,
+        "swarm_control": 0.55,
+        "burst_window": 0.45,
+        "sustained_dps": 0.65,
+        "control_disruption": 0.30,
+    },
+    "cannoneer": {
+        "single_target": 0.88,
+        "swarm_control": 0.20,
+        "burst_window": 0.62,
+        "sustained_dps": 0.35,
+        "control_disruption": 0.22,
+    },
+    "dagger_duchess": {
+        "single_target": 0.58,
+        "swarm_control": 0.72,
+        "burst_window": 0.90,
+        "sustained_dps": 0.24,
+        "control_disruption": 0.30,
+    },
+    "royal_chef": {
+        "single_target": 0.38,
+        "swarm_control": 0.70,
+        "burst_window": 0.40,
+        "sustained_dps": 0.52,
+        "control_disruption": 0.62,
+    },
+}
 
 EVO_CARD_SLUGS = {
     "archers", "baby-dragon", "barbarians", "bats", "battle-ram",
@@ -413,6 +443,47 @@ def archetype_matchup_counter_index(user_archetype: str, opponent_archetype: str
     return float(MATCHUP_COUNTER_PRIOR.get((user_archetype, opponent_archetype), 0.0))
 
 
+def compute_tower_synergy_features(md: List[dict], tower_troop: str, opponent_archetype: str) -> Dict[str, float]:
+    tower = normalize_tower(tower_troop)
+    profile = TOWER_PROFILE.get(tower, TOWER_PROFILE["tower_princess"])
+    air = float(sum(1 for m in md if m["can_hit_air"]))
+    splash = float(sum(1 for m in md if m["is_splash"]))
+    building = float(sum(1 for m in md if m["is_building"]))
+    light_spells = float(sum(1 for m in md if m["is_light_spell"]))
+    tanks = float(sum(1 for m in md if m["is_tank"]))
+
+    # Deck support: anti-swarm tools, pull structures, and quick control.
+    anti_swarm_support = min(1.0, (splash + light_spells + (air * 0.35)) / 5.0)
+    sustain_support = min(1.0, (building + tanks * 0.45) / 3.0)
+    control_support = min(1.0, (building + light_spells + splash * 0.3) / 4.0)
+
+    tower_synergy = (
+        anti_swarm_support * (1.0 - profile["swarm_control"])
+        + sustain_support * (1.0 - profile["sustained_dps"])
+        + control_support * (1.0 - profile["control_disruption"])
+    )
+    tower_synergy = max(0.0, min(1.0, tower_synergy))
+
+    opponent_swarm_pressure = 1.0 if opponent_archetype in {"log_bait", "hyper_bait", "split_lane_pressure"} else 0.0
+    opponent_tank_pressure = 1.0 if opponent_archetype in {"beatdown", "air_beatdown"} else 0.0
+    opponent_pressure = 0.0
+    opponent_pressure += opponent_swarm_pressure * max(0.0, 0.65 - profile["swarm_control"])
+    opponent_pressure += opponent_tank_pressure * max(0.0, 0.68 - profile["single_target"])
+    opponent_pressure = max(0.0, min(1.0, opponent_pressure))
+
+    return {
+        "tower_profile_single_target": float(profile["single_target"]),
+        "tower_profile_swarm_control": float(profile["swarm_control"]),
+        "tower_profile_burst_window": float(profile["burst_window"]),
+        "tower_profile_sustained_dps": float(profile["sustained_dps"]),
+        "tower_profile_control_disruption": float(profile["control_disruption"]),
+        "tower_synergy_score": float(tower_synergy),
+        "tower_opponent_pressure": float(opponent_pressure),
+        "tower_is_princess_baseline": 1.0 if tower == "tower_princess" else 0.0,
+        "tower_is_alt_pick": 0.0 if tower == "tower_princess" else 1.0,
+    }
+
+
 def build_feature_dict(
     cards: List[dict],
     tower_troop: str,
@@ -430,6 +501,8 @@ def build_feature_dict(
     user_arch = detect_deck_archetype(cards, md, avg_elixir, sum(1 for m in md if m["is_win_condition"]))
     opp_arch = normalize_archetype_label(opponent_archetype)
     matchup_counter = archetype_matchup_counter_index(user_arch, opp_arch)
+    tower = normalize_tower(tower_troop)
+    tower_feats = compute_tower_synergy_features(md, tower, opp_arch)
     feats = {
         "avg_elixir": avg_elixir,
         "win_con_count": sum(1 for m in md if m["is_win_condition"]),
@@ -456,10 +529,10 @@ def build_feature_dict(
         "wild_mode_is_hero": 1.0 if wild_mode == "hero" else 0.0,
         "matchup_counter_index": matchup_counter,
     }
+    feats.update(tower_feats)
     for arch in ARCHETYPE_LABELS:
         feats[f"user_arch_{arch}"] = 1.0 if user_arch == arch else 0.0
         feats[f"opp_arch_{arch}"] = 1.0 if opp_arch == arch else 0.0
-    tower = normalize_tower(tower_troop)
     feats["tower_tower_princess"] = 1.0 if tower == "tower_princess" else 0.0
     feats["tower_royal_chef"] = 1.0 if tower == "royal_chef" else 0.0
     feats["tower_cannoneer"] = 1.0 if tower == "cannoneer" else 0.0
@@ -500,6 +573,15 @@ FEATURE_ORDER = [
     "wild_mode_is_evo",
     "wild_mode_is_hero",
     "matchup_counter_index",
+    "tower_profile_single_target",
+    "tower_profile_swarm_control",
+    "tower_profile_burst_window",
+    "tower_profile_sustained_dps",
+    "tower_profile_control_disruption",
+    "tower_synergy_score",
+    "tower_opponent_pressure",
+    "tower_is_princess_baseline",
+    "tower_is_alt_pick",
     "user_arch_fast_cycle",
     "user_arch_beatdown",
     "user_arch_air_beatdown",

@@ -74,6 +74,13 @@ def pseudo_label(feats: dict) -> float:
     score += min(4.0, feats.get("meta_top3_similarity", 0) * 8.0)
     score += max(-3.0, min(4.0, (feats.get("meta_weighted_win_rate", 0) - 50.0) * 0.45))
     score += max(-2.0, min(3.5, feats.get("meta_weighted_usage", 0) * 0.55))
+    score += max(-2.2, min(2.2, float(feats.get("matchup_counter_index", 0.0)) * 1.9))
+    score += max(-1.8, min(2.0, (float(feats.get("tower_synergy_score", 0.5)) - 0.5) * 5.0))
+    score -= max(0.0, min(1.6, float(feats.get("tower_opponent_pressure", 0.0)) * 2.2))
+    # Keep Tower Princess as stable baseline prior, while still allowing alt towers
+    # to score well when supported by appropriate deck structure.
+    score += 0.4 if float(feats.get("tower_is_princess_baseline", 0.0)) > 0.5 else 0.0
+    score -= 0.25 if float(feats.get("tower_is_alt_pick", 0.0)) > 0.5 and float(feats.get("tower_synergy_score", 0.0)) < 0.45 else 0.0
     score += random.uniform(-1.5, 1.5)
     return float(max(35.0, min(80.0, score)))
 
@@ -199,7 +206,7 @@ def main():
 
     joblib.dump(model, MODEL_PATH)
     meta = {
-        "modelVersion": "rf-v4-matchup-archetype",
+        "modelVersion": "rf-v5-matchup-tower-aware",
         "featureOrder": FEATURE_ORDER,
         "trainSamples": int(len(y)),
         "metaAnchorSamples": int(len(y_meta)),

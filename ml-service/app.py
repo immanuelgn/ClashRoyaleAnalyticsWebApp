@@ -137,6 +137,10 @@ def _fallback_predict(feats: dict) -> float:
     score += min(7.0, max(0.0, float(feats.get("hero_champ_ability_value", 0.0)) * 0.8))
     score += min(2.0, max(0.0, float(feats.get("hero_champ_ability_cost_sum", 0.0)) * 0.35))
     score += max(-2.0, min(2.0, float(feats.get("matchup_counter_index", 0.0)) * 1.8))
+    score += max(-1.8, min(1.8, (float(feats.get("tower_synergy_score", 0.5)) - 0.5) * 4.6))
+    score -= max(0.0, min(1.8, float(feats.get("tower_opponent_pressure", 0.0)) * 1.9))
+    if float(feats.get("tower_is_princess_baseline", 0.0)) > 0.5:
+        score += 0.35
     return float(max(35.0, min(80.0, score)))
 
 
@@ -165,9 +169,15 @@ def predict_win_rate(
         pred = _fallback_predict(feats)
     else:
         pred = float(MODEL.predict(np.array([vec], dtype=np.float32))[0])
-    # Apply matchup adjustment directly so archetype context influences output
-    # even before the next full model retrain lands in production.
+    # Apply controlled runtime adjustments so matchup/tower context influences
+    # output even before the next full model retrain lands in production.
     pred += max(-2.2, min(2.2, float(feats.get("matchup_counter_index", 0.0)) * 1.8))
+    pred += max(-1.6, min(1.6, (float(feats.get("tower_synergy_score", 0.5)) - 0.5) * 4.2))
+    pred -= max(0.0, min(1.7, float(feats.get("tower_opponent_pressure", 0.0)) * 1.8))
+    if float(feats.get("tower_is_princess_baseline", 0.0)) > 0.5:
+        pred += 0.3
+    else:
+        pred -= 0.15
     calib = get_online_calibration()
     pred = float(max(35.0, min(80.0, pred * float(calib.get("scale", 1.0)) + float(calib.get("bias", 0.0)))))
     return pred, feats, deck_cards
@@ -332,6 +342,14 @@ def predict(req: PredictRequest):
     if feats["air_counters"] <= 2:
         drivers.append("Low anti-air coverage can hurt key matchups.")
     opp_arch = normalize_opponent_archetype(req.opponentArchetype)
+    tower_synergy = float(feats.get("tower_synergy_score", 0.5))
+    tower_pressure = float(feats.get("tower_opponent_pressure", 0.0))
+    if tower_synergy >= 0.62:
+        drivers.append("Tower troop and deck structure show strong defensive synergy.")
+    elif tower_synergy <= 0.38:
+        drivers.append("Tower troop and deck structure are misaligned; adjust support tools.")
+    if tower_pressure >= 0.45:
+        drivers.append("Selected tower troop is under pressure in this matchup profile.")
     if opp_arch and opp_arch != "custom_offmeta":
         opp_text = opp_arch.replace("_", " ")
         matchup_idx = float(feats.get("matchup_counter_index", 0.0))

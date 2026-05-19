@@ -41,7 +41,7 @@ module.exports = async function handler(req, res) {
     const wildSlotMode = body.wildSlotMode || null;
     const opponentArchetype = body.opponentArchetype || null;
 
-    const result = analyzeDeck(cardIds, towerTroop, wildSlotMode);
+    const result = analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype);
     if (result.error) return res.status(400).json({ error: result.error });
 
     const ml = await getMlPrediction(cardIds, towerTroop, wildSlotMode, result.score, opponentArchetype);

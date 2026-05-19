@@ -326,6 +326,42 @@ function buildMatchups(archetype) {
   return { "Strong Against": "Overcommit decks", "Weak Against": "Hard counter matchups" };
 }
 
+function computeTowerMechanicSynergy(towerTroop, metadata, opponentArchetypeRaw) {
+  const tower = normalizeTowerTroop(towerTroop);
+  const profile = {
+    tower_princess: { single: 0.55, swarm: 0.55, burst: 0.45, sustain: 0.65, control: 0.30 },
+    cannoneer: { single: 0.88, swarm: 0.20, burst: 0.62, sustain: 0.35, control: 0.22 },
+    dagger_duchess: { single: 0.58, swarm: 0.72, burst: 0.90, sustain: 0.24, control: 0.30 },
+    royal_chef: { single: 0.38, swarm: 0.70, burst: 0.40, sustain: 0.52, control: 0.62 }
+  }[tower] || { single: 0.55, swarm: 0.55, burst: 0.45, sustain: 0.65, control: 0.30 };
+
+  const air = metadata.filter((m) => m.canHitAir).length;
+  const splash = metadata.filter((m) => m.isSplash).length;
+  const buildings = metadata.filter((m) => m.isBuilding).length;
+  const light = metadata.filter((m) => m.isLightSpell).length;
+  const tanks = metadata.filter((m) => m.isTank).length;
+
+  const antiSwarmSupport = clamp((splash + light + air * 0.35) / 5, 0, 1);
+  const sustainSupport = clamp((buildings + tanks * 0.45) / 3, 0, 1);
+  const controlSupport = clamp((buildings + light + splash * 0.3) / 4, 0, 1);
+  const synergy = clamp(
+    antiSwarmSupport * (1 - profile.swarm)
+    + sustainSupport * (1 - profile.sustain)
+    + controlSupport * (1 - profile.control),
+    0, 1
+  );
+
+  const opp = String(opponentArchetypeRaw || "").toLowerCase();
+  const isSwarmPressure = /log_bait|hyper_bait|split_lane/.test(opp);
+  const isTankPressure = /beatdown|air_beatdown/.test(opp);
+  let pressure = 0;
+  if (isSwarmPressure) pressure += Math.max(0, 0.65 - profile.swarm);
+  if (isTankPressure) pressure += Math.max(0, 0.68 - profile.single);
+  pressure = clamp(pressure, 0, 1);
+
+  return { tower, synergy, pressure };
+}
+
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
 function hasDeckSignature(cards, names) {
@@ -534,7 +570,7 @@ function suggestMlUpgrades(cards, towerTroop, baselineWinRate) {
   return out.sort((a, b) => b.deltaWinRate - a.deltaWinRate).slice(0, 3);
 }
 
-function analyzeDeck(cardIds, towerTroop, wildSlotMode) {
+function analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype) {
   const unique = [...new Set(cardIds || [])];
   if (unique.length !== 8) {
     return { error: "Deck must contain 8 unique card IDs." };
@@ -668,6 +704,20 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode) {
     }
   } else {
     towerImpact.Baseline = 0;
+  }
+  const towerMechanics = computeTowerMechanicSynergy(tt, metadata, opponentArchetype);
+  const towerSynergyAdj = Math.round(((towerMechanics.synergy - 0.5) * 6) * 10) / 10;
+  const towerPressureAdj = Math.round((towerMechanics.pressure * -4.8) * 10) / 10;
+  const princessPriorAdj = tt === "tower_princess" ? 0.6 : -0.2;
+  totalScore += towerSynergyAdj + towerPressureAdj + princessPriorAdj;
+  towerImpact["Tower-Deck Synergy"] = towerSynergyAdj;
+  towerImpact["Tower Matchup Pressure"] = towerPressureAdj;
+  if (tt === "tower_princess") {
+    strengths.push("Tower Princess baseline keeps defensive interactions stable.");
+  } else if (towerMechanics.synergy < 0.4) {
+    weaknesses.push("Selected tower needs more support cards for stable defense.");
+  } else {
+    strengths.push("Selected tower has support for its passive mechanic profile.");
   }
   if (totalScore < 0) totalScore = 0;
 
