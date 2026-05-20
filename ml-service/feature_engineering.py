@@ -298,6 +298,8 @@ def card_metadata(card: dict) -> dict:
                 "firecracker",
                 "zappies",
                 "little prince",
+                "furnace",
+                "goblin hut",
             ]
         ),
         "is_tank": (card.get("elixirCost") or 0) >= 5 or any(

@@ -287,7 +287,7 @@ function getMetadata(card) {
     ? SPELL_WIN_CON_NAMES.has(exactName)
     : (role === "wincondition" || winConByName);
   const isCycleCard = (card.elixirCost || 0) <= 2 || role === "cycle";
-  const canHitAir = attackType === "both" || attackType === "air" || /musketeer|archers|baby dragon|minions|bats|electro wizard|phoenix|dart goblin|spear goblins|hunter|wizard|witch|executioner|magic archer|electro dragon|mega minion|inferno dragon|minion horde|firecracker|zappies|little prince/.test(name);
+  const canHitAir = attackType === "both" || attackType === "air" || /musketeer|archers|baby dragon|minions|bats|electro wizard|phoenix|dart goblin|spear goblins|hunter|wizard|witch|executioner|magic archer|electro dragon|mega minion|inferno dragon|minion horde|firecracker|zappies|little prince|furnace|goblin hut/.test(name);
   const isTank = (card.elixirCost || 0) >= 5 || /giant|golem|pekka|lava hound|electro giant|royal giant/.test(name);
   const isSplash = /wizard|baby dragon|valkyrie|bowler|bomb|executioner|firecracker|witch|poison|fireball|arrows|zap|snowball|rocket|lightning/.test(name);
   const isReset = /zap|electro wizard|electro spirit|zappies/.test(name);
