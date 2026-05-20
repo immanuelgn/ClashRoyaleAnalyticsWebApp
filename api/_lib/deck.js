@@ -723,6 +723,7 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype) {
 
   const { archetype, confidence } = detectArchetype(cards, metadata, avgElixir, winConditions);
   totalScore = applyMetaCalibration(cards, archetype, totalScore, strengths, recommendations);
+  totalScore = Math.max(0, Math.min(130, Math.round(totalScore * 10) / 10));
   const mlFeatures = buildMlFeatures(cards, metadata, avgElixir, tt);
   const mlForecast = buildMlForecast(mlFeatures, totalScore, confidence);
   let mlSuggestions = suggestMlUpgrades(cards, tt, mlForecast.predictedWinRate);
