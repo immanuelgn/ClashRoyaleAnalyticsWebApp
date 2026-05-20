@@ -364,6 +364,29 @@ function computeTowerMechanicSynergy(towerTroop, metadata, opponentArchetypeRaw)
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
+function uniqPreserve(items) {
+  const out = [];
+  const seen = new Set();
+  for (const item of (items || [])) {
+    const key = String(item || "").trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(key);
+  }
+  return out;
+}
+
+function rankFeedback(items, priorityMap) {
+  return uniqPreserve(items)
+    .map((text, idx) => {
+      const key = Object.keys(priorityMap).find((k) => text.toLowerCase().includes(k)) || "";
+      const score = key ? priorityMap[key] : 40;
+      return { text, score, idx };
+    })
+    .sort((a, b) => b.score - a.score || a.idx - b.idx)
+    .map((x) => x.text);
+}
+
 function hasDeckSignature(cards, names) {
   const set = new Set(cards.map((c) => String(c.name || "").toLowerCase()));
   return names.every((n) => set.has(n));
@@ -414,7 +437,7 @@ function applyMetaCalibration(cards, archetype, totalScore, strengths, recommend
     }
   });
 
-  if (archetype === "Cycle" && calibrated < 90) calibrated += 2;
+  if (archetype === "Fast Cycle" && calibrated < 90) calibrated += 2;
   return calibrated;
 }
 
@@ -614,18 +637,30 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype) {
 
   let defense = 0;
   const airCounters = metadata.filter(m => m.canHitAir).length;
-  if (airCounters >= 3) { defense += 12; breakdown["Air Defense"] = 12; strengths.push("Reliable anti-air coverage."); }
-  else { defense += 5; breakdown["Air Defense"] = 5; weaknesses.push("Air defense may be unreliable."); }
   const buildingCount = metadata.filter(m => m.isBuilding).length;
+  const splashCount = metadata.filter(m => m.isSplash).length;
+  const lightSpellCount = metadata.filter(m => m.isLightSpell).length;
+  const heavySpellCount = metadata.filter(m => m.isHeavySpell).length;
+  const airCoverageScore = airCounters + (lightSpellCount * 0.75) + (heavySpellCount * 0.45) + (buildingCount * 0.35) + (splashCount * 0.30);
+  if (airCoverageScore >= 3.2) {
+    defense += 12;
+    breakdown["Air Defense"] = 12;
+    strengths.push("Reliable anti-air coverage.");
+  } else if (airCoverageScore >= 2.4) {
+    defense += 8;
+    breakdown["Air Defense"] = 8;
+    recommendations.push("Anti-air is playable but thin; consider one extra flexible air answer.");
+  } else {
+    defense += 5;
+    breakdown["Air Defense"] = 5;
+    weaknesses.push("Air defense may be unreliable.");
+  }
   if (buildingCount >= 1) { defense += 10; breakdown["Building Coverage"] = 10; strengths.push("Defensive building/spawner anchor present."); }
   else { defense += 4; breakdown["Building Coverage"] = 4; weaknesses.push("No defensive building/spawner detected."); }
-  const splashCount = metadata.filter(m => m.isSplash).length;
   if (splashCount >= 2) { defense += 8; breakdown["Swarm Control"] = 8; } else { defense += 4; breakdown["Swarm Control"] = 4; }
 
   let spells = 0;
   const spellCount = cards.filter(c => c.role === "Spell").length;
-  const lightSpellCount = metadata.filter(m => m.isLightSpell).length;
-  const heavySpellCount = metadata.filter(m => m.isHeavySpell).length;
   if (spellCount >= 2) { spells += 8; breakdown["Spell Count"] = 8; } else { spells += 3; breakdown["Spell Count"] = 3; weaknesses.push("Deck may be under-spelled."); }
   if (lightSpellCount >= 1 && heavySpellCount >= 1) { spells += 10; breakdown["Spell Balance"] = 10; strengths.push("Healthy light + heavy spell pairing."); }
   else { spells += 4; breakdown["Spell Balance"] = 4; weaknesses.push("Spell package lacks balance."); }
@@ -642,7 +677,7 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype) {
 
   let consistency = 0;
   const tankCount = metadata.filter(m => m.isTank).length;
-  if (avgElixir >= 2.8 && avgElixir <= 4.3) { consistency += 10; breakdown["Elixir Balance"] = 10; }
+  if (avgElixir >= 2.6 && avgElixir <= 4.5) { consistency += 10; breakdown["Elixir Balance"] = 10; }
   else { consistency += 5; breakdown["Elixir Balance"] = 5; weaknesses.push("Elixir profile is outside ideal range."); }
   if (tankCount >= 1 || winConCount >= 1) { consistency += 8; breakdown["Frontline Presence"] = 8; }
   else { consistency += 3; breakdown["Frontline Presence"] = 3; }
@@ -737,9 +772,46 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype) {
   if (buildingCount === 0) recommendations.push("Consider adding a defensive building for stronger matchup spread.");
   if (lightSpellCount === 0) recommendations.push("Add a light spell (Log/Zap/Snowball/Arrows) for cheap control.");
   if (heavySpellCount === 0) recommendations.push("Add a heavy spell (Fireball/Poison/Rocket/Lightning) for reliable finishing and control.");
-  if (avgElixir > 4.5) recommendations.push("Your deck is very heavy; consider 1-2 cheaper cycle cards.");
-  if (avgElixir < 2.8) recommendations.push("Your deck is very light; consider adding a sturdier defensive core.");
+  if (avgElixir > 4.5 && archetype !== "Beatdown" && archetype !== "Air Beatdown") {
+    recommendations.push("Your deck is very heavy; consider 1-2 cheaper cycle cards.");
+  }
+  if (avgElixir < 2.6 && archetype !== "Fast Cycle") {
+    recommendations.push("Your deck is very light; consider adding a sturdier defensive core.");
+  }
   if (recommendations.length === 0) recommendations.push("Deck structure looks balanced. Next step: validate using battle-performance data.");
+
+  const weaknessPriority = {
+    "no clear win condition": 100,
+    "no defensive building": 90,
+    "air defense may be unreliable": 85,
+    "spell package lacks balance": 78,
+    "deck may be under-spelled": 76,
+    "outside ideal range": 62,
+    "selected tower needs more support": 60,
+    "cannoneer prefers stronger anti-air": 58,
+    "struggle if swarm cleanup is too light": 58,
+  };
+  const strengthPriority = {
+    "recognized": 92,
+    "reliable anti-air coverage": 85,
+    "defensive building/spawner anchor": 82,
+    "healthy light + heavy spell pairing": 80,
+    "tower princess baseline": 76,
+    "hero/champion abilities online": 70,
+    "evolution power online": 68,
+  };
+  const recommendationPriority = {
+    "add one clear win condition": 95,
+    "consider adding a defensive building": 90,
+    "add a light spell": 86,
+    "add a heavy spell": 84,
+    "anti-air is playable but thin": 82,
+    "very heavy": 72,
+    "very light": 72,
+  };
+  const rankedWeaknesses = rankFeedback(weaknesses, weaknessPriority);
+  const rankedStrengths = rankFeedback(strengths, strengthPriority);
+  const rankedRecommendations = rankFeedback(recommendations, recommendationPriority);
 
   const roleDistribution = {};
   for (const c of cards) roleDistribution[c.role] = (roleDistribution[c.role] || 0) + 1;
@@ -752,9 +824,9 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype) {
     winConditions,
     subScores,
     breakdown,
-    strengths,
-    weaknesses,
-    recommendations,
+    strengths: rankedStrengths,
+    weaknesses: rankedWeaknesses,
+    recommendations: rankedRecommendations,
     towerTroop: tt,
     towerImpact,
     roleDistribution,

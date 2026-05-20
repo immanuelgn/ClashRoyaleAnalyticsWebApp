@@ -339,7 +339,14 @@ def predict(req: PredictRequest):
         drivers.append("No clear win condition reduces conversion reliability.")
     if feats["building_count"] == 0:
         drivers.append("No building/spawner anchor increases defensive volatility.")
-    if feats["air_counters"] <= 2:
+    air_coverage = (
+        float(feats.get("air_counters", 0.0))
+        + float(feats.get("light_spell_count", 0.0)) * 0.75
+        + float(feats.get("heavy_spell_count", 0.0)) * 0.45
+        + float(feats.get("building_count", 0.0)) * 0.35
+        + float(feats.get("splash_count", 0.0)) * 0.30
+    )
+    if air_coverage <= 2.25:
         drivers.append("Low anti-air coverage can hurt key matchups.")
     opp_arch = normalize_opponent_archetype(req.opponentArchetype)
     tower_synergy = float(feats.get("tower_synergy_score", 0.5))
