@@ -1335,8 +1335,15 @@ function normalizeOpponentArchetype(value) {
 
 async function analyzePayload(payload) {
   const res = await fetch(apiUrl(ACTIVE_API_BASE, "deck/synergy"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.title || data?.error || "Analysis request failed");
+  const raw = await res.text();
+  let data = null;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    const brief = String(raw || "").trim().slice(0, 120);
+    throw new Error(brief || `Analysis request failed (HTTP ${res.status})`);
+  }
+  if (!res.ok) throw new Error(data?.title || data?.error || `Analysis request failed (HTTP ${res.status})`);
   return data;
 }
 

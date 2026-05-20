@@ -5,6 +5,8 @@ const { normalizeArchetypeInput } = require("../_lib/archetypes");
 async function getMlPrediction(cardIds, towerTroop, wildSlotMode, scoreProxy, opponentArchetype) {
   const base = getMlServiceBase();
   if (!base) return null;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4500);
   try {
     const url = `${base}/predict`;
     const body = {
@@ -18,13 +20,22 @@ async function getMlPrediction(cardIds, towerTroop, wildSlotMode, scoreProxy, op
     const res = await fetch(url, {
       method: "POST",
       headers: getMlServiceHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal: controller.signal,
     });
     if (!res.ok) return null;
-    const data = await res.json();
+    const raw = await res.text();
+    let data = null;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return null;
+    }
     return data && typeof data === "object" ? data : null;
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
