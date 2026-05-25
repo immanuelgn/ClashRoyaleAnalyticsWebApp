@@ -39,6 +39,25 @@ async function getMlPrediction(cardIds, towerTroop, wildSlotMode, scoreProxy, op
   }
 }
 
+function clamp(v, lo, hi) {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+function calibrateDeckScore(rawScore, mlForecast) {
+  const base = Number(rawScore || 0);
+  if (!mlForecast || !Number.isFinite(Number(mlForecast.predictedWinRate))) {
+    return Math.round(clamp(base, 0, 130) * 10) / 10;
+  }
+  const wr = clamp(Number(mlForecast.predictedWinRate || 50), 35, 80);
+  const conf = clamp(Number(mlForecast.confidence || 70), 55, 95);
+  const wrScore = 35 + ((wr - 35) / 45) * 95; // maps WR to ~35..130
+  const confWeight = 0.40 + (((conf - 55) / 40) * 0.15); // 0.40..0.55
+  const blended = (base * (1 - confWeight)) + (wrScore * confWeight);
+  const ceiling = 85 + Math.max(0, wr - 50) * 1.6; // low WR cannot yield elite score
+  const floor = 55 + Math.max(0, wr - 35) * 0.7;
+  return Math.round(clamp(blended, floor, ceiling) * 10) / 10;
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -59,6 +78,7 @@ module.exports = async function handler(req, res) {
     if (ml) {
       result.mlForecast = ml.mlForecast || result.mlForecast;
       result.mlSuggestions = ml.mlSuggestions || result.mlSuggestions;
+      result.score = calibrateDeckScore(result.score, result.mlForecast);
       result.mlMeta = {
         source: "python-ml-service",
         modelVersion: ml.modelVersion || "unknown"

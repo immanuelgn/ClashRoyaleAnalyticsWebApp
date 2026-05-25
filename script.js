@@ -1443,13 +1443,20 @@ function renderQuickRead(data) {
   if (towerChip) towerChip.textContent = `Tower Fit: ${towerImpactTotal >= 8 ? "Strong" : towerImpactTotal >= 3 ? "Neutral" : "Weak"}`;
 
   let tone = "Balanced";
-  if (score >= 108) tone = "Meta-ready";
-  else if (score >= 92) tone = "Competitive";
-  else if (score >= 75) tone = "Playable";
-  else tone = "Needs tuning";
+  if (winRate > 0) {
+    if (winRate >= 68 && score >= 108) tone = "Meta-ready";
+    else if (winRate >= 62 && score >= 95) tone = "Competitive";
+    else if (winRate >= 56) tone = "Playable";
+    else tone = "Needs tuning";
+  } else {
+    if (score >= 108) tone = "Meta-ready";
+    else if (score >= 92) tone = "Competitive";
+    else if (score >= 75) tone = "Playable";
+    else tone = "Needs tuning";
+  }
   const archetype = data.archetype || "Unknown";
   const winCons = (data.winConditions || []).join(", ") || "No clear win condition";
-  if (verdict) verdict.textContent = `${tone}: ${archetype} shell, ${winCons}. Use foldouts below for deep tuning details.`;
+  if (verdict) verdict.textContent = `${tone}: ${archetype} shell, ${winCons}. Composite score blends structure + predicted performance.`;
 }
 
 async function optimizeTowerTroop() {
