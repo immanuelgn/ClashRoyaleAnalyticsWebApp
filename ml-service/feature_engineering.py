@@ -27,7 +27,7 @@ DEFENSIVE_BUILDING_IDS = {
     27000011,  # Furnace
     27000012,  # Goblin Cage
     27000013,  # Goblin Hut
-    27000014,  # Elixir Collector
+    27000007,  # Elixir Collector
 }
 
 LIGHT_SPELL_NAMES = {"zap", "the log", "log", "snowball", "giant snowball", "arrows", "barbarian barrel", "tornado"}
@@ -243,6 +243,7 @@ def card_metadata(card: dict) -> dict:
     card_id = int(card.get("id") or 0)
     is_building = (
         role in {"defense", "building", "spawner"}
+        or (27000000 <= card_id < 28000000)
         or card_id in DEFENSIVE_BUILDING_IDS
         or any(
             k in name
@@ -264,7 +265,12 @@ def card_metadata(card: dict) -> dict:
             ]
         )
     )
-    is_spell = exact_name in LIGHT_SPELL_NAMES or exact_name in HEAVY_SPELL_NAMES or exact_name in OTHER_SPELL_NAMES or role == "spell"
+    is_spell = (
+        exact_name in LIGHT_SPELL_NAMES
+        or exact_name in HEAVY_SPELL_NAMES
+        or exact_name in OTHER_SPELL_NAMES
+        or (28000000 <= card_id < 29000000)
+    )
     win_con_by_name = exact_name in WIN_CONDITION_NAMES
     return {
         "is_win_condition": (exact_name in SPELL_WIN_CON_NAMES) if is_spell else (role == "wincondition" or win_con_by_name),

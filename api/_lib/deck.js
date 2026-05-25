@@ -122,7 +122,7 @@ const DEFENSIVE_BUILDING_IDS = new Set([
   27000011, // Furnace
   27000012, // Goblin Cage
   27000013, // Goblin Hut
-  27000014 // Elixir Collector
+  27000007 // Elixir Collector
 ]);
 
 function normalizeName(text) {
@@ -150,10 +150,16 @@ function isSpellCardByName(name) {
   return LIGHT_SPELL_NAMES.has(name) || HEAVY_SPELL_NAMES.has(name) || OTHER_SPELL_NAMES.has(name);
 }
 
+function isSpellCardById(card) {
+  const id = Number(card?.id || 0);
+  return id >= 28000000 && id < 29000000;
+}
+
 function isDefensiveStructureCard(card, role, name) {
   const roleIsDefense = ["defense", "building", "spawner"].includes(role);
   if (roleIsDefense) return true;
   const id = Number(card?.id || 0);
+  if (id >= 27000000 && id < 28000000) return true;
   if (DEFENSIVE_BUILDING_IDS.has(id)) return true;
   return /cannon|tesla|inferno tower|bomb tower|tombstone|x[-\s]?bow|mortar|hut|furnace|collector|elixir collector|goblin cage|spawner|building/.test(name);
 }
@@ -241,6 +247,7 @@ function getHeroAbilityProfile(card) {
 function computeHeroAbilityValue(cards, wildSlotMode) {
   const wildMode = String(wildSlotMode || "").toLowerCase();
   let total = 0;
+  let costSum = 0;
   const active = [];
   const slotCards = [
     { card: cards[1], slot: "wild" },
@@ -266,10 +273,11 @@ function computeHeroAbilityValue(cards, wildSlotMode) {
     const controlBonus = profile.impact.some((k) => /control|taunt|freeze|displacement|reposition/.test(k)) ? 1 : 0;
     const value = base + controlBonus;
     total += value;
+    costSum += Number(profile.cost || 0);
     active.push(`${card.name} (${profile.cost}-elixir)`);
   });
 
-  return { value: total, active };
+  return { value: total, active, costSum };
 }
 
 function getMetadata(card) {
@@ -282,7 +290,7 @@ function getMetadata(card) {
   const isLightSpell = LIGHT_SPELL_NAMES.has(exactName);
   const isHeavySpell = HEAVY_SPELL_NAMES.has(exactName);
   const isOtherSpell = OTHER_SPELL_NAMES.has(exactName);
-  const isSpell = isLightSpell || isHeavySpell || isOtherSpell || role === "spell";
+  const isSpell = isLightSpell || isHeavySpell || isOtherSpell || isSpellCardById(card);
   const isWinCondition = isSpell
     ? SPELL_WIN_CON_NAMES.has(exactName)
     : (role === "wincondition" || winConByName);
@@ -655,15 +663,44 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype) {
     breakdown["Air Defense"] = 5;
     weaknesses.push("Air defense may be unreliable.");
   }
-  if (buildingCount >= 1) { defense += 10; breakdown["Building Coverage"] = 10; strengths.push("Defensive building/spawner anchor present."); }
-  else { defense += 4; breakdown["Building Coverage"] = 4; weaknesses.push("No defensive building/spawner detected."); }
+  if (buildingCount >= 1) {
+    defense += 10;
+    breakdown["Building Coverage"] = 10;
+    strengths.push("Defensive building/spawner anchor present.");
+  } else {
+    defense += 6;
+    breakdown["Building Coverage"] = 6;
+    recommendations.push("No building anchor detected; verify tough matchups vs hog/ram/giant before locking this deck.");
+  }
   if (splashCount >= 2) { defense += 8; breakdown["Swarm Control"] = 8; } else { defense += 4; breakdown["Swarm Control"] = 4; }
 
   let spells = 0;
-  const spellCount = cards.filter(c => c.role === "Spell").length;
-  if (spellCount >= 2) { spells += 8; breakdown["Spell Count"] = 8; } else { spells += 3; breakdown["Spell Count"] = 3; weaknesses.push("Deck may be under-spelled."); }
-  if (lightSpellCount >= 1 && heavySpellCount >= 1) { spells += 10; breakdown["Spell Balance"] = 10; strengths.push("Healthy light + heavy spell pairing."); }
-  else { spells += 4; breakdown["Spell Balance"] = 4; weaknesses.push("Spell package lacks balance."); }
+  const spellCount = metadata.filter(m => m.isSpell).length;
+  if (spellCount >= 2) {
+    spells += 8;
+    breakdown["Spell Count"] = 8;
+  } else if (spellCount === 1) {
+    spells += 5;
+    breakdown["Spell Count"] = 5;
+    recommendations.push("Single-spell setup detected; track swarm punish windows and clutch resets carefully.");
+  } else {
+    spells += 1;
+    breakdown["Spell Count"] = 1;
+    weaknesses.push("Deck may be under-spelled.");
+  }
+  if (lightSpellCount >= 1 && heavySpellCount >= 1) {
+    spells += 10;
+    breakdown["Spell Balance"] = 10;
+    strengths.push("Healthy light + heavy spell pairing.");
+  } else if (spellCount >= 2) {
+    spells += 6;
+    breakdown["Spell Balance"] = 6;
+    recommendations.push("Two spells detected but same profile; consider splitting into one light + one heavy for flexibility.");
+  } else {
+    spells += 3;
+    breakdown["Spell Balance"] = 3;
+    weaknesses.push("Spell package lacks balance.");
+  }
   const resetCount = metadata.filter(m => m.isReset).length;
   if (resetCount > 0) { spells += 7; breakdown["Reset Access"] = 7; } else { spells += 3; breakdown["Reset Access"] = 3; }
 
@@ -694,6 +731,10 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype) {
     breakdown["Hero/Champ Ability Value"] = heroAbility.value;
     strengths.push(`Hero/Champion abilities online: ${heroAbility.active.join(", ")}.`);
   }
+  const abilityCostLoad = Number(heroAbility.costSum || 0);
+  if (abilityCostLoad > 0) {
+    breakdown["Hero Ability Cost Load"] = -Math.round(abilityCostLoad * 10) / 10;
+  }
 
   subScores.Offense = offense;
   subScores.Defense = defense;
@@ -702,6 +743,12 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype) {
   subScores.Consistency = consistency;
 
   let totalScore = offense + defense + spells + cycle + consistency + evoAbility.value + heroAbility.value;
+  if (abilityCostLoad > 0) {
+    const cycleSupport = metadata.filter((m) => m.isCycleCard).length;
+    const loadPenaltyBase = abilityCostLoad >= 3 ? 2.6 : (abilityCostLoad >= 2 ? 1.8 : 0.9);
+    const loadPenalty = Math.max(0.4, loadPenaltyBase - (cycleSupport >= 3 ? 0.8 : 0));
+    totalScore -= loadPenalty;
+  }
 
   const tt = normalizeTowerTroop(towerTroop);
   const cheapCount = metadata.filter(m => m.isCycleCard).length;

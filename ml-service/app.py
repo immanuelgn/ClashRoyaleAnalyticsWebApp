@@ -337,8 +337,23 @@ def predict(req: PredictRequest):
     drivers = []
     if feats["win_con_count"] == 0:
         drivers.append("No clear win condition reduces conversion reliability.")
+    arch = "custom_offmeta"
+    for k in [
+        "fast_cycle", "beatdown", "air_beatdown", "log_bait", "hyper_bait",
+        "bridge_spam", "control_counterpush", "siege", "split_lane_pressure", "custom_offmeta"
+    ]:
+        if float(feats.get(f"user_arch_{k}", 0.0)) > 0.5:
+            arch = k
+            break
     if feats["building_count"] == 0:
-        drivers.append("No building/spawner anchor increases defensive volatility.")
+        if arch in {"air_beatdown", "bridge_spam", "log_bait", "hyper_bait"}:
+            drivers.append("No building anchor is viable in this shell, but matchup execution must be tighter.")
+        else:
+            drivers.append("No building/spawner anchor increases defensive volatility.")
+    if feats["spell_count"] <= 0:
+        drivers.append("No direct spell support detected; finishing and swarm control consistency drop sharply.")
+    elif feats["spell_count"] == 1:
+        drivers.append("Single-spell setup detected; defend tightly and avoid overcommits.")
     air_coverage = (
         float(feats.get("air_counters", 0.0))
         + float(feats.get("light_spell_count", 0.0)) * 0.75
