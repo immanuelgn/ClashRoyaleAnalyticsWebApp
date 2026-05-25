@@ -135,7 +135,7 @@ h1, h2 {
   display: grid;
   grid-template-columns: minmax(520px, 1.08fr) minmax(560px, 0.92fr);
   gap: 14px;
-  align-items: start;
+  align-items: stretch;
 }
 .left-column,
 .right-column {
@@ -148,11 +148,11 @@ h1, h2 {
   grid-auto-rows: min-content;
 }
 .right-column .panel { margin: 0; }
-.left-column { align-self: start; }
+.left-column { align-self: stretch; }
 .left-column .panel:first-child {
   position: static;
-  min-height: 0;
-  height: auto;
+  min-height: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -708,8 +708,8 @@ button.secondary { background: #334155; color: #e2e8f0; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
   gap: 10px;
-  min-height: 340px;
-  max-height: clamp(430px, 64vh, 760px);
+  min-height: 0;
+  max-height: none;
   overflow: auto;
   padding-right: 4px;
   align-content: start;
