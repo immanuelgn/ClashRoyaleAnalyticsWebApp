@@ -89,11 +89,14 @@ h1, h2 {
 }
 .analysis-block {
   margin-top: 12px;
-  min-height: 250px;
+  min-height: 170px;
   display: grid;
   grid-auto-rows: min-content;
   align-content: start;
   gap: 10px;
+}
+.analysis-block.panel-compact {
+  min-height: 120px;
 }
 .analysis-mosaic {
   display: grid;
@@ -132,19 +135,24 @@ h1, h2 {
   display: grid;
   grid-template-columns: minmax(520px, 1.08fr) minmax(560px, 0.92fr);
   gap: 14px;
-  align-items: stretch;
+  align-items: start;
 }
 .left-column,
 .right-column {
   display: grid;
   gap: 16px;
 }
+.right-column {
+  align-content: start;
+  align-items: start;
+  grid-auto-rows: min-content;
+}
 .right-column .panel { margin: 0; }
-.left-column { align-self: stretch; }
+.left-column { align-self: start; }
 .left-column .panel:first-child {
   position: static;
-  min-height: 100%;
-  height: 100%;
+  min-height: 0;
+  height: auto;
   display: flex;
   flex-direction: column;
 }
@@ -700,12 +708,17 @@ button.secondary { background: #334155; color: #e2e8f0; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
   gap: 10px;
-  min-height: 0;
-  max-height: none;
+  min-height: 340px;
+  max-height: clamp(430px, 64vh, 760px);
   overflow: auto;
   padding-right: 4px;
   align-content: start;
   flex: 1 1 auto;
+}
+.analysis-hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #bcd2ef;
 }
 
 .status { color: var(--muted); min-height: 20px; }

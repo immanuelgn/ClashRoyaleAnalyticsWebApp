@@ -64,7 +64,7 @@
     </section>
     <div class="dashboard-grid">
       <div class="left-column">
-        <section class="panel">
+        <section class="panel" id="overviewPanel">
           <h2>Card Pool</h2>
           <div class="pool-tools">
             <input id="searchInput" placeholder="Search cards..." />
@@ -245,7 +245,7 @@
     </div>
 
     <div class="analysis-mosaic">
-      <section class="panel analysis-block span-6">
+      <section class="panel analysis-block span-6" id="towerOptimizerPanel">
         <h2 class="section-label">Tower Impact</h2>
         <p class="analysis-sub">How your selected tower troop supports this build.</p>
         <div id="towerImpactTiles" class="metric-tiles"></div>
@@ -255,17 +255,17 @@
         <ul id="towerImpactList"></ul>
       </section>
 
-      <section class="panel analysis-block span-6">
+      <section class="panel analysis-block span-6" id="cardSwapPanel">
         <h2 class="section-label">Tower Optimizer</h2>
         <div id="towerOptimizerVisual" class="insight-cards"></div>
         <ul id="towerOptimizerList"></ul>
-        <p id="towerOptimizerBest"></p>
+        <p id="towerOptimizerBest" class="analysis-hint"></p>
       </section>
 
-      <section class="panel analysis-block span-6">
+      <section class="panel analysis-block span-6" id="metaStabilityPanel">
         <h2 class="section-label">Card Swap Planner</h2>
         <div id="deltaVisualStats" class="chip-row"></div>
-        <p id="deltaSummary"></p>
+        <p id="deltaSummary" class="analysis-hint"></p>
         <div id="swapBoard" class="swap-board"></div>
         <ul id="deltaBreakdown"></ul>
       </section>
@@ -285,9 +285,9 @@
         <ul id="weaknessProfileList"></ul>
       </section>
 
-      <section class="panel analysis-block span-6">
+      <section class="panel analysis-block span-6" id="patchDriftPanel">
         <h2 class="section-label">Meta Stability</h2>
-        <p id="patchDriftLine"></p>
+        <p id="patchDriftLine" class="analysis-hint"></p>
         <div class="drift-meter"><i id="patchDriftMeter"></i></div>
         <div id="patchDriftVisual" class="insight-cards"></div>
         <ul id="patchDriftList"></ul>

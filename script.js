@@ -402,6 +402,7 @@ const state = {
   wildSlotModes: {},
   lastPoolSelect: { cardId: null, at: 0 }
 };
+let analysisLayoutFrame = null;
 
 const OPP_ARCHETYPE_NORMALIZE = new Map([
   ["cycle", "fast_cycle"],
@@ -476,6 +477,7 @@ searchEl.addEventListener("input", onSearch);
 cardTypeFilterEl?.addEventListener("change", onCardTypeFilterChange);
 cardSortFilterEl?.addEventListener("change", onCardSortFilterChange);
 document.querySelectorAll(".weakness-btn").forEach((btn) => btn.addEventListener("click", () => runWeaknessProfile(btn.dataset.profile)));
+window.addEventListener("resize", () => scheduleAnalysisLayout());
 
 boot();
 
@@ -496,6 +498,10 @@ async function boot() {
     renderBattleSnapshot(null);
     renderSubscoreMiniChart(null);
     renderTowerImpactMiniChart(null);
+    setText("towerOptimizerBest", "Run Optimize Tower Troop to compare all tower troop outcomes for this deck.");
+    setText("deltaSummary", "Analyze runs the swap planner automatically. Meaningful one-card upgrades will show here.");
+    setText("patchDriftLine", "Analyze deck to estimate patch drift risk and adaptation guidance.");
+    updateAnalysisPanelState();
     statusEl.textContent = "Drag cards, choose tower troop, then analyze.";
   } catch (err) {
     console.error(err);
@@ -597,6 +603,59 @@ function applyCardPoolFilters() {
   state.filteredCards = filtered;
 }
 
+function hasText(id) {
+  const el = document.getElementById(id);
+  return !!(el && String(el.textContent || "").trim().length);
+}
+
+function setPanelCompact(panelId, compact) {
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+  panel.classList.toggle("panel-compact", !!compact);
+}
+
+function applyAnalysisMasonry() {
+  const grid = document.querySelector(".analysis-mosaic");
+  if (!grid) return;
+  const style = window.getComputedStyle(grid);
+  const rowSize = Number.parseFloat(style.getPropertyValue("grid-auto-rows"));
+  const rowGap = Number.parseFloat(style.getPropertyValue("row-gap") || style.getPropertyValue("gap") || "0");
+  if (!Number.isFinite(rowSize) || rowSize <= 0) return;
+
+  [...grid.children].forEach((item) => {
+    if (!(item instanceof HTMLElement)) return;
+    item.style.gridRowEnd = "span 1";
+  });
+
+  [...grid.children].forEach((item) => {
+    if (!(item instanceof HTMLElement)) return;
+    const h = item.getBoundingClientRect().height;
+    const span = Math.max(1, Math.ceil((h + rowGap) / (rowSize + rowGap)));
+    item.style.gridRowEnd = `span ${span}`;
+  });
+}
+
+function scheduleAnalysisLayout() {
+  if (analysisLayoutFrame) cancelAnimationFrame(analysisLayoutFrame);
+  analysisLayoutFrame = requestAnimationFrame(() => {
+    analysisLayoutFrame = null;
+    applyAnalysisMasonry();
+    window.setTimeout(applyAnalysisMasonry, 120);
+  });
+}
+
+function updateAnalysisPanelState() {
+  const towerCards = document.querySelectorAll("#towerOptimizerVisual .insight-card").length;
+  const swapCards = document.querySelectorAll("#swapBoard .swap-card").length;
+  const driftCards = document.querySelectorAll("#patchDriftVisual .insight-card").length;
+  const deltaChips = document.querySelectorAll("#deltaVisualStats .chip").length;
+
+  setPanelCompact("cardSwapPanel", towerCards === 0 && !hasText("towerOptimizerBest"));
+  setPanelCompact("metaStabilityPanel", swapCards === 0 && deltaChips === 0 && !hasText("deltaSummary"));
+  setPanelCompact("patchDriftPanel", driftCards === 0 && !hasText("patchDriftLine"));
+  scheduleAnalysisLayout();
+}
+
 function clearDeck() {
   state.deck = Array(8).fill(null);
   state.wildSlotModes = {};
@@ -604,7 +663,10 @@ function clearDeck() {
   renderSlots();
   renderCardPool();
   ["towerOptimizerList", "deltaBreakdown", "weaknessProfileList", "patchDriftList", "simDetails", "mlDriversList", "mlSuggestionsList"].forEach((id) => renderList(id, []));
-  ["towerOptimizerBest", "deltaSummary", "patchDriftLine", "simSummary", "mlForecastLine"].forEach((id) => setText(id, ""));
+  setText("towerOptimizerBest", "Run Optimize Tower Troop to compare all tower troop outcomes for this deck.");
+  setText("deltaSummary", "Analyze runs the swap planner automatically. Meaningful one-card upgrades will show here.");
+  setText("patchDriftLine", "Analyze deck to estimate patch drift risk and adaptation guidance.");
+  ["simSummary", "mlForecastLine"].forEach((id) => setText(id, ""));
   setText("learningStatusLine", "");
   setText("mlFeedbackLine", "");
   ["mlOppArchetypeInput", "mlTrophiesInput", "mlCrownsForInput", "mlCrownsAgainstInput"].forEach((id) => {
@@ -625,6 +687,7 @@ function clearDeck() {
   renderQuickRead(null);
   renderBattleSnapshot(null);
   weaknessPanelEl?.classList.add("hidden");
+  updateAnalysisPanelState();
   renderBuilderMetrics();
   statusEl.textContent = "Deck cleared.";
 }
@@ -1386,6 +1449,7 @@ function renderAllAnalysis(data) {
   renderBattleSnapshot(data);
   weaknessPanelEl?.classList.remove("hidden");
   runWeaknessProfile("anti_air");
+  updateAnalysisPanelState();
 }
 
 function renderQuickRead(data) {
@@ -1487,6 +1551,7 @@ async function optimizeTowerTroop() {
   );
   state.selectedTowerTroop = choice.id;
   renderTowerTroops();
+  updateAnalysisPanelState();
   statusEl.textContent = "Tower optimization complete.";
 }
 
@@ -1508,6 +1573,7 @@ async function runDeltaEngine() {
         `Prediction confidence: ${fmtPct(baseline.mlForecast?.confidence, 0)}%`,
         "Try matchup simulator for matchup-specific improvements instead of structural swaps."
       ]);
+      updateAnalysisPanelState();
       statusEl.textContent = "Suggested changes ready.";
       return null;
     }
@@ -1520,6 +1586,7 @@ async function runDeltaEngine() {
       `Prediction confidence: ${fmtPct(baseline.mlForecast?.confidence, 0)}%`,
       `Structure-safe swaps prioritized (archetype stability + role coverage).`
     ]);
+    updateAnalysisPanelState();
     statusEl.textContent = "Suggested changes ready.";
     return top;
   }
@@ -1548,6 +1615,7 @@ async function runDeltaEngine() {
     renderSwapBoard([]);
     renderDeltaVisualStats([]);
     renderList("deltaBreakdown", []);
+    updateAnalysisPanelState();
     return null;
   }
 
@@ -1573,6 +1641,7 @@ async function runDeltaEngine() {
     `Average Elixir Cost: ${Number(baseline.averageElixir).toFixed(1)} -> ${Number(best.analyzed.averageElixir).toFixed(1)}`,
     `Win Conditions: ${(best.analyzed.winConditions || []).join(", ") || "None"}`
   ]);
+  updateAnalysisPanelState();
   statusEl.textContent = "Suggested changes ready.";
   return best;
 }
@@ -1900,6 +1969,7 @@ function renderPatchDrift(data) {
     "Use Delta Engine for low-risk one-card tune-ups.",
     "Keep 2 backup swaps for your worst matchup archetype."
   ]);
+  updateAnalysisPanelState();
 }
 
 function renderBattleSnapshot(data) {
