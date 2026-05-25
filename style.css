@@ -132,7 +132,7 @@ h1, h2 {
   display: grid;
   grid-template-columns: minmax(520px, 1.08fr) minmax(560px, 0.92fr);
   gap: 14px;
-  align-items: start;
+  align-items: stretch;
 }
 .left-column,
 .right-column {
@@ -140,9 +140,11 @@ h1, h2 {
   gap: 16px;
 }
 .right-column .panel { margin: 0; }
+.left-column { align-self: stretch; }
 .left-column .panel:first-child {
   position: static;
-  min-height: calc(100vh - 140px);
+  min-height: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -698,11 +700,12 @@ button.secondary { background: #334155; color: #e2e8f0; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
   gap: 10px;
-  min-height: 58vh;
-  max-height: calc(100vh - 260px);
+  min-height: 0;
+  max-height: none;
   overflow: auto;
   padding-right: 4px;
   align-content: start;
+  flex: 1 1 auto;
 }
 
 .status { color: var(--muted); min-height: 20px; }
@@ -926,6 +929,7 @@ ul { padding-left: 20px; }
   .left-column .panel:first-child { position: static; }
   .left-column .panel:first-child {
     min-height: auto;
+    height: auto;
     display: block;
   }
   .analysis-block { min-height: auto; }
@@ -946,6 +950,7 @@ ul { padding-left: 20px; }
   .card-pool {
     min-height: 44vh;
     max-height: 52vh;
+    flex: initial;
   }
 }
 .card-chip.slot-evo .card-img { filter: saturate(1.25) contrast(1.05) drop-shadow(0 0 10px rgba(168,85,247,.45)); }
