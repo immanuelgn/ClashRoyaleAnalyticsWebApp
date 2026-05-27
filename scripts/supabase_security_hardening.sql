@@ -78,11 +78,39 @@ END
 $$;
 
 -- Tighten function search_path for Supabase advisor warning cleanup.
-ALTER FUNCTION IF EXISTS public.compute_deck_fingerprint(JSONB)
-SET search_path = public, pg_catalog;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname = 'compute_deck_fingerprint'
+      AND pg_get_function_identity_arguments(p.oid) = 'ids jsonb'
+  ) THEN
+    EXECUTE 'ALTER FUNCTION public.compute_deck_fingerprint(jsonb) SET search_path = public, pg_catalog';
+  END IF;
 
-ALTER FUNCTION IF EXISTS public.is_valid_unique_deck(JSONB)
-SET search_path = public, pg_catalog;
+  IF EXISTS (
+    SELECT 1
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname = 'is_valid_unique_deck'
+      AND pg_get_function_identity_arguments(p.oid) = 'ids jsonb'
+  ) THEN
+    EXECUTE 'ALTER FUNCTION public.is_valid_unique_deck(jsonb) SET search_path = public, pg_catalog';
+  END IF;
 
-ALTER FUNCTION IF EXISTS public.trg_set_deck_fingerprint()
-SET search_path = public, pg_catalog;
+  IF EXISTS (
+    SELECT 1
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname = 'trg_set_deck_fingerprint'
+      AND pg_get_function_identity_arguments(p.oid) = ''
+  ) THEN
+    EXECUTE 'ALTER FUNCTION public.trg_set_deck_fingerprint() SET search_path = public, pg_catalog';
+  END IF;
+END
+$$;
