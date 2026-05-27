@@ -2,41 +2,62 @@ const { analyzeDeck } = require("../_lib/deck");
 const { getMlServiceBase, getMlServiceHeaders, isScoreProxyEnabled } = require("../_lib/mlService");
 const { normalizeArchetypeInput } = require("../_lib/archetypes");
 
-async function getMlPrediction(cardIds, towerTroop, wildSlotMode, scoreProxy, opponentArchetype) {
-  const base = getMlServiceBase();
-  if (!base) return null;
+async function fetchMlPredictionOnce(base, payload, timeoutMs) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 4500);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const url = `${base}/predict`;
-    const body = {
-      cardIds,
-      towerTroop,
-      wildSlotMode: wildSlotMode || null,
-      opponentArchetype: normalizeArchetypeInput(opponentArchetype),
-    };
-    if (isScoreProxyEnabled()) body.scoreProxy = scoreProxy;
-
-    const res = await fetch(url, {
+    const res = await fetch(`${base}/predict`, {
       method: "POST",
       headers: getMlServiceHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
       signal: controller.signal,
     });
-    if (!res.ok) return null;
     const raw = await res.text();
     let data = null;
     try {
       data = JSON.parse(raw);
     } catch {
-      return null;
+      data = null;
     }
-    return data && typeof data === "object" ? data : null;
-  } catch {
-    return null;
+    return { ok: res.ok, status: res.status, data, aborted: false };
+  } catch (err) {
+    return { ok: false, status: 0, data: null, aborted: err?.name === "AbortError" };
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function getMlPrediction(cardIds, towerTroop, wildSlotMode, scoreProxy, opponentArchetype) {
+  const base = getMlServiceBase();
+  if (!base) return { data: null, reason: "missing_base" };
+  const body = {
+    cardIds,
+    towerTroop,
+    wildSlotMode: wildSlotMode || null,
+    opponentArchetype: normalizeArchetypeInput(opponentArchetype),
+  };
+  if (isScoreProxyEnabled()) body.scoreProxy = scoreProxy;
+
+  // Render cold starts can exceed a short timeout; retry once with a longer window.
+  const fastTry = await fetchMlPredictionOnce(base, body, 7000);
+  if (fastTry.ok && fastTry.data && typeof fastTry.data === "object") {
+    return { data: fastTry.data, reason: "ok_fast" };
+  }
+  if (fastTry.status === 401 || fastTry.status === 403) {
+    return { data: null, reason: `auth_${fastTry.status}` };
+  }
+  if (fastTry.status >= 400 && fastTry.status < 500 && !fastTry.aborted) {
+    return { data: null, reason: `client_${fastTry.status}` };
+  }
+
+  const slowTry = await fetchMlPredictionOnce(base, body, 22000);
+  if (slowTry.ok && slowTry.data && typeof slowTry.data === "object") {
+    return { data: slowTry.data, reason: "ok_retry" };
+  }
+  const finalReason = slowTry.aborted
+    ? "timeout_retry"
+    : (slowTry.status ? `http_${slowTry.status}` : "network_error");
+  return { data: null, reason: finalReason };
 }
 
 function clamp(v, lo, hi) {
@@ -74,19 +95,22 @@ module.exports = async function handler(req, res) {
     const result = analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype);
     if (result.error) return res.status(400).json({ error: result.error });
 
-    const ml = await getMlPrediction(cardIds, towerTroop, wildSlotMode, result.score, opponentArchetype);
-    if (ml) {
+    const mlResult = await getMlPrediction(cardIds, towerTroop, wildSlotMode, result.score, opponentArchetype);
+    if (mlResult.data) {
+      const ml = mlResult.data;
       result.mlForecast = ml.mlForecast || result.mlForecast;
       result.mlSuggestions = ml.mlSuggestions || result.mlSuggestions;
       result.score = calibrateDeckScore(result.score, result.mlForecast);
       result.mlMeta = {
         source: "python-ml-service",
-        modelVersion: ml.modelVersion || "unknown"
+        modelVersion: ml.modelVersion || "unknown",
+        route: mlResult.reason
       };
     } else {
       result.mlMeta = {
         source: "embedded-js-fallback",
-        modelVersion: "js-heuristic-v1"
+        modelVersion: "js-heuristic-v1",
+        reason: mlResult.reason || "unknown"
       };
     }
 

@@ -174,6 +174,17 @@ def predict_win_rate(
     pred += max(-2.2, min(2.2, float(feats.get("matchup_counter_index", 0.0)) * 1.8))
     pred += max(-1.6, min(1.6, (float(feats.get("tower_synergy_score", 0.5)) - 0.5) * 4.2))
     pred -= max(0.0, min(1.7, float(feats.get("tower_opponent_pressure", 0.0)) * 1.8))
+    # Meta priors: reward high-similarity, proven archetype shells (e.g., Hog 2.6 family)
+    # while avoiding blind inflation for off-meta random decks.
+    meta_sim = float(feats.get("meta_max_similarity", 0.0))
+    meta_wr = float(feats.get("meta_weighted_win_rate", 0.0))
+    meta_usage = float(feats.get("meta_weighted_usage", 0.0))
+    if meta_sim >= 0.62:
+        wr_centered = max(-4.0, min(4.0, (meta_wr - 50.0) * 0.28))
+        usage_bonus = max(0.0, min(1.3, meta_usage * 0.45))
+        pred += max(-1.2, min(2.7, wr_centered + usage_bonus))
+    elif meta_sim <= 0.24 and float(feats.get("win_con_count", 0.0)) <= 1.0:
+        pred -= 0.6
     if float(feats.get("tower_is_princess_baseline", 0.0)) > 0.5:
         pred += 0.3
     else:
@@ -448,4 +459,4 @@ def feedback(req: FeedbackRequest):
 
 @app.get("/learning/status")
 def learning_status():
-    return {"ok": True, **get_learning_stats()}
+    return {"ok": True, "modelVersion": str(META.get("modelVersion") or "untrained"), **get_learning_stats()}
