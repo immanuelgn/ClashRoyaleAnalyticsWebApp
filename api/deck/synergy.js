@@ -27,6 +27,23 @@ async function fetchMlPredictionOnce(base, payload, timeoutMs) {
   }
 }
 
+async function warmMlService(base, timeoutMs) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${base}/health`, {
+      method: "GET",
+      headers: getMlServiceHeaders(),
+      signal: controller.signal,
+    });
+    return { ok: res.ok, status: res.status };
+  } catch {
+    return { ok: false, status: 0 };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function getMlPrediction(cardIds, towerTroop, wildSlotMode, scoreProxy, opponentArchetype) {
   const base = getMlServiceBase();
   if (!base) return { data: null, reason: "missing_base" };
@@ -50,7 +67,8 @@ async function getMlPrediction(cardIds, towerTroop, wildSlotMode, scoreProxy, op
     return { data: null, reason: `client_${fastTry.status}` };
   }
 
-  const slowTry = await fetchMlPredictionOnce(base, body, 22000);
+  await warmMlService(base, 65000);
+  const slowTry = await fetchMlPredictionOnce(base, body, 65000);
   if (slowTry.ok && slowTry.data && typeof slowTry.data === "object") {
     return { data: slowTry.data, reason: "ok_retry" };
   }
