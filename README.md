@@ -54,5 +54,5 @@ The hard part is balancing **explainability** and **predictive quality** without
 - Runtime secrets are injected via environment variables.
 - Database access is isolated behind backend services.
 - Service endpoints are designed to fail safely when dependencies are offline.
-- Vercel cron keeps the Render ML service warm at `/api/ml/warm` every 10 minutes.
+- Vercel cron keeps the Render ML service warm at `/api/ml/warm` on a daily schedule (Hobby plan compatible).
 - Set `CRON_SECRET` on Vercel so only authorized cron calls can hit warmup route.
