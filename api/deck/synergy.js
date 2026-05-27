@@ -55,8 +55,12 @@ async function getMlPrediction(cardIds, towerTroop, wildSlotMode, scoreProxy, op
   };
   if (isScoreProxyEnabled()) body.scoreProxy = scoreProxy;
 
-  // Render cold starts can exceed a short timeout; retry once with a longer window.
-  const fastTry = await fetchMlPredictionOnce(base, body, 7000);
+  // Keep API response snappy: bounded retries that fit serverless limits.
+  const FAST_TIMEOUT_MS = 3200;
+  const WARM_TIMEOUT_MS = 1200;
+  const RETRY_TIMEOUT_MS = 3200;
+
+  const fastTry = await fetchMlPredictionOnce(base, body, FAST_TIMEOUT_MS);
   if (fastTry.ok && fastTry.data && typeof fastTry.data === "object") {
     return { data: fastTry.data, reason: "ok_fast" };
   }
@@ -67,8 +71,8 @@ async function getMlPrediction(cardIds, towerTroop, wildSlotMode, scoreProxy, op
     return { data: null, reason: `client_${fastTry.status}` };
   }
 
-  await warmMlService(base, 65000);
-  const slowTry = await fetchMlPredictionOnce(base, body, 65000);
+  await warmMlService(base, WARM_TIMEOUT_MS);
+  const slowTry = await fetchMlPredictionOnce(base, body, RETRY_TIMEOUT_MS);
   if (slowTry.ok && slowTry.data && typeof slowTry.data === "object") {
     return { data: slowTry.data, reason: "ok_retry" };
   }
