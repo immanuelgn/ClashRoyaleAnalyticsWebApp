@@ -170,6 +170,12 @@ def init_db() -> None:
                 $$;
                 """
             )
+            cur.execute(
+                """
+                ALTER FUNCTION public.compute_deck_fingerprint(JSONB)
+                SET search_path = public, pg_catalog;
+                """
+            )
 
             cur.execute(
                 """
@@ -192,6 +198,12 @@ def init_db() -> None:
                 $$;
                 """
             )
+            cur.execute(
+                """
+                ALTER FUNCTION public.is_valid_unique_deck(JSONB)
+                SET search_path = public, pg_catalog;
+                """
+            )
 
             cur.execute(
                 """
@@ -204,6 +216,12 @@ def init_db() -> None:
                   RETURN NEW;
                 END;
                 $$;
+                """
+            )
+            cur.execute(
+                """
+                ALTER FUNCTION public.trg_set_deck_fingerprint()
+                SET search_path = public, pg_catalog;
                 """
             )
 

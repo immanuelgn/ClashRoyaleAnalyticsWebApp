@@ -76,3 +76,13 @@ BEGIN
   END IF;
 END
 $$;
+
+-- Tighten function search_path for Supabase advisor warning cleanup.
+ALTER FUNCTION IF EXISTS public.compute_deck_fingerprint(JSONB)
+SET search_path = public, pg_catalog;
+
+ALTER FUNCTION IF EXISTS public.is_valid_unique_deck(JSONB)
+SET search_path = public, pg_catalog;
+
+ALTER FUNCTION IF EXISTS public.trg_set_deck_fingerprint()
+SET search_path = public, pg_catalog;
