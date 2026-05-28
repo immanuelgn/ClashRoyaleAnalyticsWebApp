@@ -408,6 +408,12 @@ const OPP_ARCHETYPE_NORMALIZE = new Map([
   ["cycle", "fast_cycle"],
   ["fast cycle", "fast_cycle"],
   ["hog cycle", "fast_cycle"],
+  ["hog 26", "fast_cycle"],
+  ["hog 2.6", "fast_cycle"],
+  ["hog eq", "fast_cycle"],
+  ["hog earthquake", "fast_cycle"],
+  ["miner wb", "fast_cycle"],
+  ["miner wall breakers", "fast_cycle"],
   ["drill cycle", "fast_cycle"],
   ["xbow cycle", "fast_cycle"],
   ["x-bow cycle", "fast_cycle"],
@@ -431,8 +437,12 @@ const OPP_ARCHETYPE_NORMALIZE = new Map([
   ["counter push", "control_counterpush"],
   ["splashyard", "control_counterpush"],
   ["miner poison", "control_counterpush"],
+  ["giant graveyard", "control_counterpush"],
+  ["graveyard control", "control_counterpush"],
   ["siege", "siege"],
   ["bridge spam", "bridge_spam"],
+  ["pekka bridge spam", "bridge_spam"],
+  ["pekka bridgespam", "bridge_spam"],
   ["bridge_spam", "bridge_spam"],
   ["bridgespam", "bridge_spam"],
   ["split lane", "split_lane_pressure"],
@@ -448,6 +458,15 @@ const OPP_ARCHETYPE_NORMALIZE = new Map([
   ["spell turtle", "midladder_spell_turtle"],
   ["pocket rocket", "midladder_spell_turtle"],
   ["freeze trap", "midladder_freeze_trap"],
+  ["lumberloon freeze", "midladder_freeze_trap"],
+  ["balloon freeze", "midladder_freeze_trap"],
+  ["e golem healer", "midladder_overcommit"],
+  ["egolem healer", "midladder_overcommit"],
+  ["mega knight witch wizard", "midladder_overcommit"],
+  ["mk witch wizard", "midladder_overcommit"],
+  ["ebarbs rage", "midladder_overcommit"],
+  ["mega knight bait", "midladder_meta_hodgepodge"],
+  ["mk bait", "midladder_meta_hodgepodge"],
   ["meta hodgepodge", "midladder_meta_hodgepodge"],
   ["top deck copier", "midladder_meta_hodgepodge"],
   ["offmeta", "custom_offmeta"],
@@ -1501,9 +1520,11 @@ function renderQuickRead(data) {
 
   const winRate = Number(data.mlForecast?.predictedWinRate || 0);
   const conf = Number(data.mlForecast?.confidence || 0);
+  const mlSource = String(data.mlMeta?.source || "").trim();
+  const mlSourceLabel = mlSource === "python-ml-service" ? "Python ML" : "Heuristic";
   const towerImpactTotal = Object.values(data.towerImpact || {}).reduce((sum, v) => sum + Number(v || 0), 0);
   if (mlWinChip) mlWinChip.textContent = `Win Rate: ${winRate > 0 ? `${winRate}%` : "-"}`;
-  if (mlConfChip) mlConfChip.textContent = `Prediction Confidence: ${conf > 0 ? `${conf}%` : "-"}`;
+  if (mlConfChip) mlConfChip.textContent = `Prediction Confidence: ${conf > 0 ? `${conf}%` : "-"} (${mlSourceLabel})`;
   if (towerChip) towerChip.textContent = `Tower Fit: ${towerImpactTotal >= 8 ? "Strong" : towerImpactTotal >= 3 ? "Neutral" : "Weak"}`;
 
   let tone = "Balanced";

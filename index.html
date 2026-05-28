@@ -187,31 +187,35 @@
             1) Build and analyze a full deck.
             2) Play a real match with that deck.
             3) Tap <strong>I Won</strong> or <strong>I Lost</strong>.
-            4) Add optional opponent details to improve ML faster.
+            4) Pick opponent archetype + crowns/trophies to improve ML faster.
           </p>
           <div class="feedback-grid">
-            <input id="mlOppArchetypeInput" type="text" placeholder="Opponent archetype (optional: fast_cycle, beatdown, air_beatdown, log_bait, hyper_bait, bridge_spam...)" list="oppArchetypeOptions" />
+            <select id="mlOppArchetypeInput" aria-label="Opponent archetype">
+              <option value="">Opponent Archetype (Optional)</option>
+              <optgroup label="Competitive Core">
+                <option value="fast_cycle">Fast Cycle</option>
+                <option value="beatdown">Beatdown</option>
+                <option value="air_beatdown">Air Beatdown (LavaLoon)</option>
+                <option value="log_bait">Log Bait</option>
+                <option value="hyper_bait">Hyper Bait / Spam Bait</option>
+                <option value="bridge_spam">Bridge Spam</option>
+                <option value="control_counterpush">Control / Counter-Push</option>
+                <option value="siege">Siege (X-Bow / Mortar)</option>
+                <option value="split_lane_pressure">Split-Lane Pressure</option>
+              </optgroup>
+              <optgroup label="Common Midladder / Off-Meta">
+                <option value="midladder_no_wincon">No Win-Condition Pile</option>
+                <option value="midladder_overcommit">Overcommit Heavy Pile</option>
+                <option value="midladder_spell_turtle">Spell Turtle / Pocket Rocket</option>
+                <option value="midladder_freeze_trap">Freeze Trap</option>
+                <option value="midladder_meta_hodgepodge">Meta Hodgepodge / Copier Variant</option>
+                <option value="custom_offmeta">Other Off-Meta / Custom</option>
+              </optgroup>
+            </select>
             <input id="mlTrophiesInput" type="number" min="0" max="10000" placeholder="Trophies (optional)" />
             <input id="mlCrownsForInput" type="number" min="0" max="3" placeholder="Your Crowns (0-3)" />
             <input id="mlCrownsAgainstInput" type="number" min="0" max="3" placeholder="Opponent Crowns (0-3)" />
           </div>
-          <datalist id="oppArchetypeOptions">
-            <option value="fast_cycle"></option>
-            <option value="beatdown"></option>
-            <option value="air_beatdown"></option>
-            <option value="log_bait"></option>
-            <option value="hyper_bait"></option>
-            <option value="control_counterpush"></option>
-            <option value="siege"></option>
-            <option value="bridge_spam"></option>
-            <option value="split_lane_pressure"></option>
-            <option value="midladder_no_wincon"></option>
-            <option value="midladder_overcommit"></option>
-            <option value="midladder_spell_turtle"></option>
-            <option value="midladder_freeze_trap"></option>
-            <option value="midladder_meta_hodgepodge"></option>
-            <option value="custom_offmeta"></option>
-          </datalist>
           <p id="mlFeedbackLine" class="sub"></p>
           <p id="learningStatusLine" class="sub"></p>
           <ul id="mlDriversList"></ul>

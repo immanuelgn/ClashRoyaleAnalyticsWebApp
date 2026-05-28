@@ -512,8 +512,20 @@ function predictWinRate(features) {
 
 function buildMlForecast(features, score, archetypeConfidence) {
   const predictedWinRate = Math.round(predictWinRate(features) * 10) / 10;
-  const confidenceBase = 62 + (archetypeConfidence || 0) * 0.2 + clamp(score / 4, 0, 18);
-  const confidence = Math.round(clamp(confidenceBase, 55, 94));
+  const structurePenalty =
+    (features.winConCount === 0 ? 10 : 0) +
+    (features.lightSpellCount === 0 ? 7 : 0) +
+    (features.heavySpellCount === 0 ? 6 : 0) +
+    (features.buildingCount === 0 ? 4 : 0);
+  const volatilityPenalty =
+    Math.round(clamp(Math.abs(features.avgElixir - 3.6) * 4.0, 0, 8)) +
+    (features.airCounters <= 2 ? 5 : 0);
+  const confidenceBase =
+    52 +
+    clamp((archetypeConfidence || 0) * 0.16, 0, 14) +
+    clamp(score / 6.5, 0, 14) +
+    clamp(features.winConCount, 0, 2) * 3;
+  const confidence = Math.round(clamp(confidenceBase - structurePenalty - volatilityPenalty, 50, 91));
   const drivers = [];
   if (features.winConCount === 0) drivers.push("No clear win condition lowers conversion rate.");
   if (features.buildingCount === 0) drivers.push("No building/spawner anchor hurts defense stability.");

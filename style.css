@@ -870,6 +870,14 @@ ul { padding-left: 20px; }
   background: rgba(9, 20, 42, 0.82);
   color: #deebff;
 }
+.feedback-grid select {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid #35557f;
+  background: rgba(9, 20, 42, 0.82);
+  color: #deebff;
+}
 
 .performance-priority {
   border-color: #3a5f8f;
