@@ -661,6 +661,8 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype) {
   const splashCount = metadata.filter(m => m.isSplash).length;
   const lightSpellCount = metadata.filter(m => m.isLightSpell).length;
   const heavySpellCount = metadata.filter(m => m.isHeavySpell).length;
+  const spellCount = metadata.filter(m => m.isSpell).length;
+  const spellResetCount = metadata.filter(m => m.isSpell && m.isReset).length;
   const airCoverageScore = airCounters + (lightSpellCount * 0.75) + (heavySpellCount * 0.45) + (buildingCount * 0.35) + (splashCount * 0.30);
   if (airCoverageScore >= 3.2) {
     defense += 12;
@@ -680,14 +682,26 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype) {
     breakdown["Building Coverage"] = 10;
     strengths.push("Defensive building/spawner anchor present.");
   } else {
-    defense += 6;
-    breakdown["Building Coverage"] = 6;
+    defense += 1;
+    breakdown["Building Coverage"] = 1;
+    weaknesses.push("No defensive building/spawner anchor.");
     recommendations.push("No building anchor detected; verify tough matchups vs hog/ram/giant before locking this deck.");
   }
-  if (splashCount >= 2) { defense += 8; breakdown["Swarm Control"] = 8; } else { defense += 4; breakdown["Swarm Control"] = 4; }
+  if (splashCount >= 2) {
+    const splashValue = spellCount === 0 ? 6 : 8;
+    defense += splashValue;
+    breakdown["Swarm Control"] = splashValue;
+  } else {
+    const splashValue = spellCount === 0 ? 2 : 4;
+    defense += splashValue;
+    breakdown["Swarm Control"] = splashValue;
+  }
+  if (buildingCount === 0 && avgElixir >= 4.0) {
+    defense -= 2;
+    breakdown["Structureless Heavy Penalty"] = -2;
+  }
 
   let spells = 0;
-  const spellCount = metadata.filter(m => m.isSpell).length;
   if (spellCount >= 2) {
     spells += 8;
     breakdown["Spell Count"] = 8;
@@ -696,8 +710,8 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype) {
     breakdown["Spell Count"] = 5;
     recommendations.push("Single-spell setup detected; track swarm punish windows and clutch resets carefully.");
   } else {
-    spells += 1;
-    breakdown["Spell Count"] = 1;
+    spells += 0;
+    breakdown["Spell Count"] = 0;
     weaknesses.push("Deck may be under-spelled.");
   }
   if (lightSpellCount >= 1 && heavySpellCount >= 1) {
@@ -708,21 +722,50 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype) {
     spells += 6;
     breakdown["Spell Balance"] = 6;
     recommendations.push("Two spells detected but same profile; consider splitting into one light + one heavy for flexibility.");
+  } else if (spellCount === 1) {
+    spells += 2;
+    breakdown["Spell Balance"] = 2;
+    weaknesses.push("Single spell makes spell cycle and punish windows less stable.");
   } else {
-    spells += 3;
-    breakdown["Spell Balance"] = 3;
+    spells += 0;
+    breakdown["Spell Balance"] = 0;
     weaknesses.push("Spell package lacks balance.");
   }
-  const resetCount = metadata.filter(m => m.isReset).length;
-  if (resetCount > 0) { spells += 7; breakdown["Reset Access"] = 7; } else { spells += 3; breakdown["Reset Access"] = 3; }
+  if (spellResetCount > 0) {
+    spells += 4;
+    breakdown["Reset Access"] = 4;
+  } else if (spellCount > 0) {
+    spells += 1;
+    breakdown["Reset Access"] = 1;
+  } else {
+    spells += 0;
+    breakdown["Reset Access"] = 0;
+  }
 
   let cycle = 0;
   const cycleCardCount = metadata.filter(m => m.isCycleCard).length;
-  if (avgElixir <= 3.2) { cycle += 12; breakdown["Cycle Speed"] = 12; }
-  else if (avgElixir <= 3.8) { cycle += 9; breakdown["Cycle Speed"] = 9; }
-  else { cycle += 5; breakdown["Cycle Speed"] = 5; }
-  if (cycleCardCount >= 2) { cycle += 8; breakdown["Cheap Cycle Support"] = 8; }
-  else { cycle += 4; breakdown["Cheap Cycle Support"] = 4; }
+  if (avgElixir <= 3.0) { cycle += 12; breakdown["Cycle Speed"] = 12; }
+  else if (avgElixir <= 3.4) { cycle += 9; breakdown["Cycle Speed"] = 9; }
+  else if (avgElixir <= 3.8) { cycle += 6; breakdown["Cycle Speed"] = 6; }
+  else if (avgElixir <= 4.2) { cycle += 3; breakdown["Cycle Speed"] = 3; }
+  else { cycle += 1; breakdown["Cycle Speed"] = 1; }
+  if (cycleCardCount >= 3 && avgElixir <= 3.6) {
+    cycle += 8;
+    breakdown["Cheap Cycle Support"] = 8;
+  } else if (cycleCardCount >= 2 && avgElixir <= 3.9) {
+    cycle += 6;
+    breakdown["Cheap Cycle Support"] = 6;
+  } else if (cycleCardCount >= 2) {
+    cycle += 3;
+    breakdown["Cheap Cycle Support"] = 3;
+  } else if (cycleCardCount === 1) {
+    cycle += 1;
+    breakdown["Cheap Cycle Support"] = 1;
+  } else {
+    cycle += 0;
+    breakdown["Cheap Cycle Support"] = 0;
+  }
+  if (avgElixir >= 4.2 && cycleCardCount <= 1) weaknesses.push("Heavy elixir profile with limited cycle support.");
 
   let consistency = 0;
   const tankCount = metadata.filter(m => m.isTank).length;
