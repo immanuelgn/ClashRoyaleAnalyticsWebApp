@@ -1,6 +1,47 @@
 const { getMlServiceBase, getMlServiceHeaders } = require("../_lib/mlService");
 const { normalizeArchetypeInput } = require("../_lib/archetypes");
 
+async function postFeedbackOnce(url, payload, timeoutMs) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: getMlServiceHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+    let data = null;
+    try {
+      data = await r.json();
+    } catch {
+      data = null;
+    }
+    return { ok: r.ok, status: r.status, data, aborted: false };
+  } catch (err) {
+    return { ok: false, status: 0, data: null, aborted: err?.name === "AbortError" };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function warmMl(base, timeoutMs) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const r = await fetch(`${base}/health`, {
+      method: "GET",
+      headers: getMlServiceHeaders(),
+      signal: controller.signal
+    });
+    return { ok: r.ok, status: r.status };
+  } catch {
+    return { ok: false, status: 0 };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
@@ -34,38 +75,51 @@ module.exports = async function handler(req, res) {
     }
 
     const url = `${String(base).replace(/\/+$/, "")}/feedback`;
-    const r = await fetch(url, {
-      method: "POST",
-      headers: getMlServiceHeaders({ "Content-Type": "application/json" }),
-      body: JSON.stringify({
-        cardIds,
-        towerTroop,
-        wildSlotMode,
-        won,
-        crownsFor,
-        crownsAgainst,
-        opponentArchetype,
-        gameMode,
-        trophies,
-        patchVersion
-      })
-    });
+    const payload = {
+      cardIds,
+      towerTroop,
+      wildSlotMode,
+      won,
+      crownsFor,
+      crownsAgainst,
+      opponentArchetype,
+      gameMode,
+      trophies,
+      patchVersion
+    };
 
-    if (!r.ok) {
+    const firstTry = await postFeedbackOnce(url, payload, 3500);
+    if (firstTry.ok) {
+      return res.status(200).json({ ok: true, source: "python-ml-service" });
+    }
+
+    if (firstTry.status === 401 || firstTry.status === 403) {
       return res.status(200).json({
         ok: false,
         source: "python-ml-service",
-        message: `ML feedback write failed (${r.status}).`
+        message: `ML feedback write failed (${firstTry.status}).`,
+        retryable: false
       });
     }
 
-    const data = await r.json();
-    return res.status(200).json({ ok: !!data?.ok, source: "python-ml-service" });
+    await warmMl(String(base).replace(/\/+$/, ""), 1200);
+    const secondTry = await postFeedbackOnce(url, payload, 7000);
+    if (secondTry.ok) {
+      return res.status(200).json({ ok: true, source: "python-ml-service" });
+    }
+
+    return res.status(200).json({
+      ok: false,
+      source: "python-ml-service",
+      message: `Could not submit ML feedback (${secondTry.status || "network"}).`,
+      retryable: true
+    });
   } catch {
     return res.status(200).json({
       ok: false,
       source: "python-ml-service",
-      message: "Could not submit ML feedback."
+      message: "Could not submit ML feedback.",
+      retryable: true
     });
   }
 };

@@ -44,7 +44,22 @@ async function warmMlService(base, timeoutMs) {
   }
 }
 
-async function getMlPrediction(cardIds, towerTroop, wildSlotMode, scoreProxy, opponentArchetype) {
+function getTimingProfile(mode) {
+  if (mode === "prefer_python") {
+    return {
+      fastTimeoutMs: 4200,
+      warmTimeoutMs: 1500,
+      retryTimeoutMs: 7000
+    };
+  }
+  return {
+    fastTimeoutMs: 2200,
+    warmTimeoutMs: 900,
+    retryTimeoutMs: 2200
+  };
+}
+
+async function getMlPrediction(cardIds, towerTroop, wildSlotMode, scoreProxy, opponentArchetype, mode = "fast") {
   const base = getMlServiceBase();
   if (!base) return { data: null, reason: "missing_base" };
   const body = {
@@ -55,12 +70,9 @@ async function getMlPrediction(cardIds, towerTroop, wildSlotMode, scoreProxy, op
   };
   if (isScoreProxyEnabled()) body.scoreProxy = scoreProxy;
 
-  // Keep API response snappy: bounded retries that fit serverless limits.
-  const FAST_TIMEOUT_MS = 3200;
-  const WARM_TIMEOUT_MS = 1200;
-  const RETRY_TIMEOUT_MS = 3200;
+  const timing = getTimingProfile(mode);
 
-  const fastTry = await fetchMlPredictionOnce(base, body, FAST_TIMEOUT_MS);
+  const fastTry = await fetchMlPredictionOnce(base, body, timing.fastTimeoutMs);
   if (fastTry.ok && fastTry.data && typeof fastTry.data === "object") {
     return { data: fastTry.data, reason: "ok_fast" };
   }
@@ -71,8 +83,8 @@ async function getMlPrediction(cardIds, towerTroop, wildSlotMode, scoreProxy, op
     return { data: null, reason: `client_${fastTry.status}` };
   }
 
-  await warmMlService(base, WARM_TIMEOUT_MS);
-  const slowTry = await fetchMlPredictionOnce(base, body, RETRY_TIMEOUT_MS);
+  await warmMlService(base, timing.warmTimeoutMs);
+  const slowTry = await fetchMlPredictionOnce(base, body, timing.retryTimeoutMs);
   if (slowTry.ok && slowTry.data && typeof slowTry.data === "object") {
     return { data: slowTry.data, reason: "ok_retry" };
   }
@@ -113,11 +125,12 @@ module.exports = async function handler(req, res) {
     const towerTroop = body.towerTroop || "tower_princess";
     const wildSlotMode = body.wildSlotMode || null;
     const opponentArchetype = body.opponentArchetype || null;
+    const mlMode = body.mlMode === "prefer_python" ? "prefer_python" : "fast";
 
     const result = analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype);
     if (result.error) return res.status(400).json({ error: result.error });
 
-    const mlResult = await getMlPrediction(cardIds, towerTroop, wildSlotMode, result.score, opponentArchetype);
+    const mlResult = await getMlPrediction(cardIds, towerTroop, wildSlotMode, result.score, opponentArchetype, mlMode);
     if (mlResult.data) {
       const ml = mlResult.data;
       result.mlForecast = ml.mlForecast || result.mlForecast;
@@ -126,13 +139,18 @@ module.exports = async function handler(req, res) {
       result.mlMeta = {
         source: "python-ml-service",
         modelVersion: ml.modelVersion || "unknown",
-        route: mlResult.reason
+        route: mlResult.reason,
+        attempted: true
       };
     } else {
+      const retryable = mlResult.reason === "timeout_retry" || mlResult.reason === "network_error";
       result.mlMeta = {
         source: "embedded-js-fallback",
         modelVersion: "js-heuristic-v1",
-        reason: mlResult.reason || "unknown"
+        reason: mlResult.reason || "unknown",
+        attempted: true,
+        retryable,
+        recommendedRetryMs: retryable ? 2200 : null
       };
     }
 

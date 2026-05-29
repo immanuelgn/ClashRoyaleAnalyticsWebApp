@@ -400,9 +400,12 @@ const state = {
   latestAnalysis: null,
   revisions: [],
   wildSlotModes: {},
-  lastPoolSelect: { cardId: null, at: 0 }
+  lastPoolSelect: { cardId: null, at: 0 },
+  analysisRunId: 0,
+  feedbackQueueBusy: false
 };
 let analysisLayoutFrame = null;
+const FEEDBACK_QUEUE_KEY = "royalepro_ml_feedback_queue_v1";
 
 const OPP_ARCHETYPE_NORMALIZE = new Map([
   ["cycle", "fast_cycle"],
@@ -500,6 +503,93 @@ window.addEventListener("resize", () => scheduleAnalysisLayout());
 
 boot();
 
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function loadFeedbackQueue() {
+  try {
+    const raw = localStorage.getItem(FEEDBACK_QUEUE_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveFeedbackQueue(queue) {
+  try {
+    localStorage.setItem(FEEDBACK_QUEUE_KEY, JSON.stringify(Array.isArray(queue) ? queue : []));
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+function enqueueFeedback(payload) {
+  const queue = loadFeedbackQueue();
+  queue.push({ payload, at: Date.now(), tries: 0 });
+  saveFeedbackQueue(queue);
+}
+
+async function postMlFeedbackPayload(payload) {
+  const res = await fetch(apiUrl(ACTIVE_API_BASE, "ml/feedback"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  const data = await res.json();
+  if (!res.ok || !data?.ok) {
+    const err = new Error(data?.error || data?.message || `HTTP ${res.status}`);
+    err.retryable = data?.retryable !== false;
+    throw err;
+  }
+}
+
+async function flushFeedbackQueue() {
+  if (state.feedbackQueueBusy) return;
+  state.feedbackQueueBusy = true;
+  try {
+    const queue = loadFeedbackQueue();
+    if (!queue.length) return;
+    const nextQueue = [];
+    for (const item of queue) {
+      try {
+        await postMlFeedbackPayload(item.payload);
+      } catch (err) {
+        const tries = Number(item.tries || 0) + 1;
+        if (tries < 5 && err?.retryable !== false) nextQueue.push({ ...item, tries });
+      }
+    }
+    saveFeedbackQueue(nextQueue);
+    if (nextQueue.length === 0) await renderLearningStatus();
+  } finally {
+    state.feedbackQueueBusy = false;
+  }
+}
+
+async function upgradeAnalysisWithPythonMl(payload, runId) {
+  const attempts = [900, 2200, 4200];
+  for (const waitMs of attempts) {
+    if (runId !== state.analysisRunId) return false;
+    await delay(waitMs);
+    if (runId !== state.analysisRunId) return false;
+    try {
+      const refreshed = await analyzePayload(payload, { mlMode: "prefer_python" });
+      if (runId !== state.analysisRunId) return false;
+      if (String(refreshed?.mlMeta?.source || "") === "python-ml-service") {
+        state.latestAnalysis = refreshed;
+        renderAllAnalysis(refreshed);
+        await renderLearningStatus();
+        statusEl.textContent = "Analysis complete (Python ML synced).";
+        return true;
+      }
+    } catch {
+      // Keep retrying quietly while user keeps working.
+    }
+  }
+  return false;
+}
+
 async function boot() {
   statusEl.textContent = "Loading card pool...";
   loadRevisions();
@@ -522,6 +612,7 @@ async function boot() {
     setText("patchDriftLine", "Analyze deck to estimate patch drift risk and adaptation guidance.");
     updateAnalysisPanelState();
     statusEl.textContent = "Drag cards, choose tower troop, then analyze.";
+    flushFeedbackQueue();
   } catch (err) {
     console.error(err);
     statusEl.textContent = "Could not load cards from API. Please refresh once.";
@@ -1312,24 +1403,34 @@ function getSlotBadge(slotType) {
 async function analyzeDeck() {
   const cards = state.deck.filter(Boolean);
   if (cards.length !== 8) return statusEl.textContent = "Deck must contain all 8 cards before analysis.";
+  flushFeedbackQueue();
   try {
+    const runId = ++state.analysisRunId;
     statusEl.textContent = "Analyzing deck...";
     const wildSlotCard = state.deck[1];
     const wildSlotMode = wildSlotCard ? getWildModeForCard(1, wildSlotCard) : null;
     const oppArchetypeRaw = document.getElementById("mlOppArchetypeInput")?.value?.trim() || "";
-    const data = await analyzePayload({
+    const payload = {
       cardIds: cards.map((c) => c.id),
       towerTroop: state.selectedTowerTroop,
       wildSlotMode,
       opponentArchetype: normalizeOpponentArchetype(oppArchetypeRaw),
-    });
+    };
+    const data = await analyzePayload(payload);
+    if (runId !== state.analysisRunId) return;
     state.latestAnalysis = data;
     renderAllAnalysis(data);
     await renderLearningStatus();
     statusEl.textContent = "Analyzing suggested changes...";
     await runDeltaEngine();
     renderPatchDrift(data);
-    statusEl.textContent = "Analysis complete.";
+    const usedPythonMl = String(data?.mlMeta?.source || "") === "python-ml-service";
+    if (usedPythonMl) {
+      statusEl.textContent = "Analysis complete.";
+      return;
+    }
+    statusEl.textContent = "Fast analysis ready. Syncing Python ML in background...";
+    upgradeAnalysisWithPythonMl(payload, runId);
   } catch (err) {
     statusEl.textContent = `Error: ${err.message}`;
   }
@@ -1386,13 +1487,7 @@ async function submitMlFeedback(won) {
       trophies: Number.isFinite(trophies) ? Math.max(0, Math.min(10000, trophies)) : null,
       patchVersion: "live"
     };
-    const res = await fetch(apiUrl(ACTIVE_API_BASE, "ml/feedback"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if (!res.ok || !data?.ok) throw new Error(data?.error || data?.message || `HTTP ${res.status}`);
+    await postMlFeedbackPayload(payload);
     if (line) {
       line.textContent = won
         ? "Feedback saved: marked as win. Your Crowns = crowns you took, Opponent Crowns = crowns they took."
@@ -1400,8 +1495,21 @@ async function submitMlFeedback(won) {
     }
     await renderLearningStatus();
   } catch (err) {
-    if (line) line.textContent = "Could not submit feedback right now.";
-    statusEl.textContent = `Feedback error: ${err.message || "unknown error"}`;
+    enqueueFeedback({
+      cardIds: cards.map((c) => c.id),
+      towerTroop: state.selectedTowerTroop,
+      wildSlotMode: state.deck[1] ? getWildModeForCard(1, state.deck[1]) : null,
+      won: !!won,
+      crownsFor: Number.isFinite(crownsFor) ? Math.max(0, Math.min(3, crownsFor)) : null,
+      crownsAgainst: Number.isFinite(crownsAgainst) ? Math.max(0, Math.min(3, crownsAgainst)) : null,
+      opponentArchetype: normalizeOpponentArchetype(oppArchetypeRaw),
+      gameMode: "normal_battle",
+      trophies: Number.isFinite(trophies) ? Math.max(0, Math.min(10000, trophies)) : null,
+      patchVersion: "live"
+    });
+    if (line) line.textContent = "Feedback queued and will auto-retry if ML is waking up.";
+    statusEl.textContent = `Feedback queued (${err.message || "temporary ML delay"}).`;
+    flushFeedbackQueue();
   }
 }
 
@@ -1415,8 +1523,9 @@ function normalizeOpponentArchetype(value) {
   return "custom_offmeta";
 }
 
-async function analyzePayload(payload) {
-  const res = await fetch(apiUrl(ACTIVE_API_BASE, "deck/synergy"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+async function analyzePayload(payload, opts = {}) {
+  const body = opts?.mlMode ? { ...payload, mlMode: opts.mlMode } : payload;
+  const res = await fetch(apiUrl(ACTIVE_API_BASE, "deck/synergy"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   const raw = await res.text();
   let data = null;
   try {
