@@ -76,8 +76,8 @@ const HERO_ART_OVERRIDES = {
     "assets/hero/bowler-hero-cover.png?v=20260517e"
   ],
   "Tombstone": [
-    "/assets/hero/tombstone-hero-cover.jpg?v=20260603b",
-    "assets/hero/tombstone-hero-cover.jpg?v=20260603b"
+    "/assets/hero/tombstone-hero-cover.jpg?v=20260603c",
+    "assets/hero/tombstone-hero-cover.jpg?v=20260603c"
   ]
 };
 
@@ -86,8 +86,8 @@ const EVO_ART_OVERRIDES = {
     "https://cdn.royaleapi.com/static/img/cards-150/minion-horde-ev1.png"
   ],
   "Princess": [
-    "/assets/evo-princess-cover.jpg?v=20260603b",
-    "assets/evo-princess-cover.jpg?v=20260603b"
+    "/assets/evo-princess-cover.jpg?v=20260603c",
+    "assets/evo-princess-cover.jpg?v=20260603c"
   ]
 };
 
