@@ -120,7 +120,7 @@ EVO_CARD_SLUGS = {
     "firecracker", "furnace", "giant-snowball", "goblin-barrel", "goblin-cage",
     "goblin-drill", "goblin-giant", "hunter", "ice-spirit",
     "inferno-dragon", "knight", "lumberjack", "mega-knight",
-    "minion-horde", "musketeer",
+    "minion-horde", "musketeer", "princess",
     "mortar", "pekka", "royal-ghost", "royal-giant",
     "royal-hogs", "royal-recruits", "skeleton-army", "skeleton-barrel", "skeletons",
     "tesla", "valkyrie", "wall-breakers", "witch", "wizard", "zap",
@@ -129,7 +129,7 @@ EVO_FORCE_OFF_SLUGS = {"the-log"}
 HERO_CARD_SLUGS = {
     "barbarian-barrel", "giant", "goblins", "ice-golem", "knight",
     "magic-archer", "mega-minion", "mini-pekka", "musketeer", "wizard", "balloon",
-    "dark-prince", "bowler",
+    "dark-prince", "bowler", "tombstone",
 }
 CHAMPION_CARD_SLUGS = {
     "archer-queen", "boss-bandit", "goblinstein", "golden-knight",
@@ -160,6 +160,7 @@ EVO_ABILITY_IMPACT = {
     "knight": {"cycles": 2, "impact": ["move-mitigation", "tankiness"]},
     "lumberjack": {"cycles": 2, "impact": ["rage-uptime", "death-value"]},
     "musketeer": {"cycles": 2, "impact": ["sniper-range", "pickoff"]},
+    "princess": {"cycles": 2, "impact": ["slow-control", "death-zone"]},
     "royal-ghost": {"cycles": 2, "impact": ["invis-pressure", "spawn-value"]},
     "royal-hogs": {"cycles": 2, "impact": ["air-path", "landing-burst"]},
     "skeleton-army": {"cycles": 2, "impact": ["protection", "swarm-retention"]},
@@ -190,6 +191,7 @@ HERO_ABILITY_IMPACT = {
     "bowler": {"cost": 2, "impact": ["range-spike", "lane-control"]},
     "musketeer": {"cost": 3, "impact": ["turret-support", "dual-target-defense"]},
     "dark-prince": {"cost": 3, "impact": ["split-entity", "aoe-smash"]},
+    "tombstone": {"cost": 6, "impact": ["tank-summon", "building-target-pressure", "swarm-control"]},
 }
 CHAMPION_ABILITY_IMPACT = {
     "golden-knight": {"cost": 1, "impact": ["chain-dash", "invuln-entry"]},

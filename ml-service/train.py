@@ -27,7 +27,7 @@ def infer_wild_mode(card_by_id: dict, deck_ids: list[int]) -> str:
     hero_slugs = {
         "barbarian-barrel", "giant", "goblins", "ice-golem", "knight",
         "magic-archer", "mega-minion", "mini-pekka", "musketeer", "wizard", "balloon",
-        "dark-prince", "bowler",
+        "dark-prince", "bowler", "tombstone",
     }
     champion_slugs = {
         "archer-queen", "boss-bandit", "goblinstein", "golden-knight",
@@ -39,7 +39,7 @@ def infer_wild_mode(card_by_id: dict, deck_ids: list[int]) -> str:
         "firecracker", "furnace", "giant-snowball", "goblin-barrel", "goblin-cage",
         "goblin-drill", "goblin-giant", "hunter", "ice-spirit",
         "inferno-dragon", "knight", "lumberjack", "mega-knight",
-        "minion-horde", "musketeer", "mortar", "pekka", "royal-ghost", "royal-giant",
+        "minion-horde", "musketeer", "princess", "mortar", "pekka", "royal-ghost", "royal-giant",
         "royal-hogs", "royal-recruits", "skeleton-army", "skeleton-barrel", "skeletons",
         "tesla", "valkyrie", "wall-breakers", "witch", "wizard", "zap",
     }
