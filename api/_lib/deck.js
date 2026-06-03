@@ -42,10 +42,10 @@ const CHAMPION_CARD_SLUGS = new Set([
 const EVO_FORCE_OFF_SLUGS = new Set(["the-log"]);
 const EVO_ICON_OVERRIDES = {
   "minion-horde": "https://cdn.royaleapi.com/static/img/cards-150/minion-horde-ev1.png",
-  "princess": "/assets/evo-princess-cover.jpg?v=20260603a"
+  "princess": "/assets/evo-princess-cover.jpg?v=20260603b"
 };
 const HERO_ICON_OVERRIDES = {
-  "tombstone": "/assets/hero/tombstone-hero-cover.jpg?v=20260603a"
+  "tombstone": "/assets/hero/tombstone-hero-cover.jpg?v=20260603b"
 };
 const EVO_ABILITY_IMPACT = {
   "barbarians": { cycles: 1, impact: ["tempo", "dps"] },
