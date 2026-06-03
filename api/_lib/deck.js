@@ -8,6 +8,7 @@ const CARD_DATA_OVERRIDES = {
   27000001: { elixirCost: 5, role: "Spawner" }, // Goblin Hut
   28000006: { elixirCost: 1, role: "Spell" },   // Mirror
   28000017: { role: "Spell" },                  // Giant Snowball
+  26000026: { attackType: "Both" },            // Princess
 };
 
 function withCardDataOverrides(card) {
@@ -22,7 +23,7 @@ const EVO_CARD_SLUGS = new Set([
   "firecracker", "furnace", "giant-snowball", "goblin-barrel", "goblin-cage",
   "goblin-drill", "goblin-giant", "hunter", "ice-spirit",
   "inferno-dragon", "knight", "lumberjack", "mega-knight",
-  "minion-horde", "musketeer",
+  "minion-horde", "musketeer", "princess",
   "mortar", "pekka", "royal-ghost", "royal-giant",
   "royal-hogs", "royal-recruits", "skeleton-army", "skeleton-barrel", "skeletons",
   "tesla", "valkyrie", "wall-breakers", "witch", "wizard", "zap"
@@ -31,7 +32,7 @@ const EVO_CARD_SLUGS = new Set([
 const HERO_CARD_SLUGS = new Set([
   "barbarian-barrel", "giant", "goblins", "ice-golem", "knight",
   "magic-archer", "mega-minion", "mini-pekka", "musketeer", "wizard", "balloon",
-  "dark-prince", "bowler"
+  "dark-prince", "bowler", "tombstone"
 ]);
 const CHAMPION_CARD_SLUGS = new Set([
   "archer-queen", "boss-bandit", "goblinstein", "golden-knight",
@@ -40,7 +41,11 @@ const CHAMPION_CARD_SLUGS = new Set([
 
 const EVO_FORCE_OFF_SLUGS = new Set(["the-log"]);
 const EVO_ICON_OVERRIDES = {
-  "minion-horde": "https://cdn.royaleapi.com/static/img/cards-150/minion-horde-ev1.png"
+  "minion-horde": "https://cdn.royaleapi.com/static/img/cards-150/minion-horde-ev1.png",
+  "princess": "/assets/evo-princess-cover.jpg?v=20260603a"
+};
+const HERO_ICON_OVERRIDES = {
+  "tombstone": "/assets/hero/tombstone-hero-cover.jpg?v=20260603a"
 };
 const EVO_ABILITY_IMPACT = {
   "barbarians": { cycles: 1, impact: ["tempo", "dps"] },
@@ -67,6 +72,7 @@ const EVO_ABILITY_IMPACT = {
   "knight": { cycles: 2, impact: ["move-mitigation", "tankiness"] },
   "lumberjack": { cycles: 2, impact: ["rage-uptime", "death-value"] },
   "musketeer": { cycles: 2, impact: ["sniper-range", "pickoff"] },
+  "princess": { cycles: 2, impact: ["slow-control", "death-zone"] },
   "royal-ghost": { cycles: 2, impact: ["invis-pressure", "spawn-value"] },
   "royal-hogs": { cycles: 2, impact: ["air-path", "landing-burst"] },
   "skeleton-army": { cycles: 2, impact: ["protection", "swarm-retention"] },
@@ -97,7 +103,8 @@ const HERO_ABILITY_IMPACT = {
   "balloon": { cost: 2, impact: ["assist-pressure", "defender-punish"] },
   "bowler": { cost: 2, impact: ["range-spike", "lane-control"] },
   "musketeer": { cost: 3, impact: ["turret-support", "dual-target-defense"] },
-  "dark-prince": { cost: 3, impact: ["split-entity", "aoe-smash"] }
+  "dark-prince": { cost: 3, impact: ["split-entity", "aoe-smash"] },
+  "tombstone": { cost: 6, impact: ["tank-summon", "building-target-pressure", "swarm-control"] }
 };
 const CHAMPION_ABILITY_IMPACT = {
   "golden-knight": { cost: 1, impact: ["chain-dash", "invuln-entry"] },
@@ -201,7 +208,7 @@ function withFlags(inputCard) {
   return {
     ...card,
     iconUrls: { medium: `https://royaleapi.github.io/cr-api-assets/cards/${slug}.png` },
-    heroIconUrl: `https://royaleapi.github.io/cr-api-assets/cards/${slug}-hero.png`,
+    heroIconUrl: HERO_ICON_OVERRIDES[slug] || `https://royaleapi.github.io/cr-api-assets/cards/${slug}-hero.png`,
     evoIconUrl: EVO_ICON_OVERRIDES[slug] || `https://royaleapi.github.io/cr-api-assets/cards/${slug}-ev1.png`,
     isEvolution,
     isHero,
@@ -269,7 +276,7 @@ function computeHeroAbilityValue(cards, wildSlotMode) {
       }
       return;
     }
-    const base = profile.cost <= 1 ? 3 : profile.cost === 2 ? 4 : 5;
+    const base = profile.cost >= 5 ? 7 : profile.cost <= 1 ? 3 : profile.cost === 2 ? 4 : 5;
     const controlBonus = profile.impact.some((k) => /control|taunt|freeze|displacement|reposition/.test(k)) ? 1 : 0;
     const value = base + controlBonus;
     total += value;
@@ -800,7 +807,7 @@ function analyzeDeck(cardIds, towerTroop, wildSlotMode, opponentArchetype) {
   let totalScore = offense + defense + spells + cycle + consistency + evoAbility.value + heroAbility.value;
   if (abilityCostLoad > 0) {
     const cycleSupport = metadata.filter((m) => m.isCycleCard).length;
-    const loadPenaltyBase = abilityCostLoad >= 3 ? 2.6 : (abilityCostLoad >= 2 ? 1.8 : 0.9);
+    const loadPenaltyBase = abilityCostLoad >= 5 ? 4.5 : (abilityCostLoad >= 3 ? 2.6 : (abilityCostLoad >= 2 ? 1.8 : 0.9));
     const loadPenalty = Math.max(0.4, loadPenaltyBase - (cycleSupport >= 3 ? 0.8 : 0));
     totalScore -= loadPenalty;
   }

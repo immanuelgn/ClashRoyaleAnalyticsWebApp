@@ -44,7 +44,7 @@ const EVO_CARD_SLUGS = new Set([
   "firecracker", "furnace", "giant-snowball", "goblin-barrel", "goblin-cage",
   "goblin-drill", "goblin-giant", "hunter", "ice-spirit",
   "inferno-dragon", "knight", "lumberjack", "mega-knight",
-  "minion-horde", "musketeer",
+  "minion-horde", "musketeer", "princess",
   "mortar", "pekka", "royal-ghost", "royal-giant",
   "royal-hogs", "royal-recruits", "skeleton-army", "skeleton-barrel", "skeletons",
   "tesla", "valkyrie", "wall-breakers", "witch", "wizard", "zap"
@@ -53,7 +53,7 @@ const EVO_CARD_SLUGS = new Set([
 const HERO_CARD_SLUGS = new Set([
   "barbarian-barrel", "giant", "goblins", "ice-golem", "knight",
   "magic-archer", "mega-minion", "mini-pekka", "musketeer", "wizard", "balloon",
-  "dark-prince", "bowler"
+  "dark-prince", "bowler", "tombstone"
 ]);
 const CHAMPION_CARD_SLUGS = new Set([
   "archer-queen", "boss-bandit", "goblinstein", "golden-knight",
@@ -74,12 +74,20 @@ const HERO_ART_OVERRIDES = {
   "Bowler": [
     "/assets/hero/bowler-hero-cover.png?v=20260517e",
     "assets/hero/bowler-hero-cover.png?v=20260517e"
+  ],
+  "Tombstone": [
+    "/assets/hero/tombstone-hero-cover.jpg?v=20260603a",
+    "assets/hero/tombstone-hero-cover.jpg?v=20260603a"
   ]
 };
 
 const EVO_ART_OVERRIDES = {
   "Minion Horde": [
     "https://cdn.royaleapi.com/static/img/cards-150/minion-horde-ev1.png"
+  ],
+  "Princess": [
+    "/assets/evo-princess-cover.jpg?v=20260603a",
+    "assets/evo-princess-cover.jpg?v=20260603a"
   ]
 };
 
@@ -179,6 +187,10 @@ const EVO_ABILITY_INFO = {
   "musketeer": {
     cycles: 2,
     effects: ["Periodically fires powerful long-range sniper shots."]
+  },
+  "princess": {
+    cycles: 2,
+    effects: ["First attack and every third attack fire icy arrows that slow enemies in range.", "Upon defeat, Princess leaves arrows behind that slow and damage nearby enemies."]
   },
   "royal-ghost": {
     cycles: 2,
@@ -307,6 +319,11 @@ const HERO_ABILITY_INFO = {
     cost: 3,
     ability: "Destructive Dismount",
     effects: ["Leaps off mount with heavy AoE smash and keeps fighting on foot.", "Rhino mount continues as a separate building-targeting charger."]
+  },
+  "tombstone": {
+    cost: 6,
+    ability: "Regal Revival",
+    effects: ["Destroys the Tombstone and raises the Tomb Queen from the earth.", "Tomb Queen spawns Skeletons, becomes a massive high-HP tank, and targets buildings."]
   }
 };
 
